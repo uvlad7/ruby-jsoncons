@@ -87,8 +87,8 @@ CCDLFLAGS = -fPIC
 CFLAGS   = $(CCDLFLAGS) $(cflags)  -fPIC $(ARCH_FLAG)
 INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir)/ruby/backward -I$(hdrdir) -I$(srcdir) -I/home/vladimir/.rvm/gems/ruby-2.7.0/gems/rice-4.0.4/include
 DEFS     = 
-CPPFLAGS =   $(DEFS) $(cppflags)
-CXXFLAGS = $(CCDLFLAGS) -g -O2 -std=c++17 -I/home/vladimir/jsoncons/ext/jsoncons/include  $(ARCH_FLAG)
+CPPFLAGS =  -I/home/vladimir/jsoncons/lib/jsoncons/jsoncons/include  $(DEFS) $(cppflags)
+CXXFLAGS = $(CCDLFLAGS) -g -O2 -std=c++17 $(ARCH_FLAG)
 ldflags  = -L. -fstack-protector-strong -rdynamic -Wl,-export-dynamic
 dldflags = -Wl,--compress-debug-sections=zlib 
 ARCH_FLAG = 
@@ -141,7 +141,7 @@ LIBS = $(LIBRUBYARG_SHARED) -lstdc++  -lm   -lc
 ORIG_SRCS = jsoncons.cpp
 SRCS = $(ORIG_SRCS) 
 OBJS = jsoncons.o
-HDRS = $(srcdir)/jsoncons.h $(srcdir)/Wrapper.h
+HDRS = $(srcdir)/jsoncons.h
 LOCAL_HDRS = 
 TARGET = jsoncons
 TARGET_NAME = jsoncons

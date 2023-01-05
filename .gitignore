@@ -13,4 +13,3 @@
 mkmf.log
 .idea
 .rake_tasks~
-Gemfile.lock

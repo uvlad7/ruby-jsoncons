@@ -1,8 +1,7 @@
 # Jsoncons
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/jsoncons`. To experiment with that code, run `bin/console` for an interactive prompt.
-
-TODO: Delete this and the text above, and describe your gem
+This gem is a thin Ruby wrapper over a C++ [jsoncons](https://github.com/danielaparker/jsoncons) library.
+Current version used by the gem is [master](https://github.com/danielaparker/jsoncons/tree/73c85182dc56d4441cdcd97255b23aa6f15b9121)
 
 ## Installation
 
@@ -22,7 +21,9 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+```
+
+```
 
 ## Development
 
@@ -32,7 +33,7 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/jsoncons.
+Bug reports and pull requests are welcome on GitHub at https://github.com/uvlad7/jsoncons.
 
 ## License
 
