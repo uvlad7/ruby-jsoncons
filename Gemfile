@@ -11,6 +11,8 @@ gem "rake-compiler"
 
 gem "minitest", "~> 5.0"
 
+gem "minitest-reporters"
+
 gem "rubocop", "~> 0.81.0"
 
 gem "rubocop-minitest"
