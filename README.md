@@ -1,7 +1,18 @@
+[![Gem Version](https://badge.fury.io/rb/jsoncons.svg)](https://badge.fury.io/rb/jsoncons)
+
 # Jsoncons
 
 This gem is a thin Ruby wrapper over a C++ [jsoncons](https://github.com/danielaparker/jsoncons) library.
-Now the version used by the gem is [master](https://github.com/danielaparker/jsoncons/tree/73c85182dc56d4441cdcd97255b23aa6f15b9121)
+But while the original library is designed as a multi-purpose tool for processing json and json-like data in C++, in the Ruby world, most of these features are not needed.
+We already have libraries like Json, CSV, Bson and JMESPath, designed for Ruby and following its style.
+But [JsonPath](https://goessner.net/articles/JsonPath/) support is [missing](https://cburgmer.github.io/json-path-comparison/).
+The [existing library](https://github.com/joshbuddy/jsonpath) is really slow and contains a lot of bugs.
+So, the purpose of this gem is to access the power of a well-crafted already existing solution at the cost of the inconvenience of C++ style in Ruby.
+Wrappers for other features, as well as Ruby-style data converters, will probably never be created.
+But if you believe that these features might be useful, feel free to open an issue or start a discussion. Pull requests are welcome, too.
+
+The [latest version](https://github.com/danielaparker/jsoncons/tree/73c85182dc56d4441cdcd97255b23aa6f15b9121) of the library was used to build the [current version](https://github.com/uvlad7/ruby-jsoncons/releases/tag/v0.1.0) of the gem.
+New versions of the gem will target the latest releases of the library, but you cat still try to build it with an older version or your custom version.
 
 ## Installation
 
