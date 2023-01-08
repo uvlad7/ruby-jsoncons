@@ -97,15 +97,6 @@ extern "C"
                                         return self.contains(key);
                                     });
 
-    rb_cJsoncons_Json.define_method("at_key", [](const json_class_type &self,
-                                                 const json_string_type &key) -> auto & {
-        return self.at(key);
-    }, Return().keepAlive());
-    rb_cJsoncons_Json.define_method("at_index", [](const json_class_type &self,
-                                                   const std::size_t &i) -> auto & {
-        return self.at(i);
-    }, Return().keepAlive());
-
     rb_cJsoncons_Json.define_method("at", &json_at, Arg("value").isValue(), Return().keepAlive());
     rb_define_alias(rb_cJsoncons_Json, "[]", "at");
     rb_cJsoncons_Json.define_method("query", &json_query,
