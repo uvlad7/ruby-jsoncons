@@ -2,9 +2,9 @@
 
 using namespace Rice;
 
-typedef /* jsoncons::wojson */ jsoncons::ojson json_class_type;
+using json_class_type = /* jsoncons::wojson */ jsoncons::ojson;
 // wchar_t is not defined with Rice
-typedef /* std::wstring */ std::string json_string_type;
+using json_string_type = /* std::wstring */ std::string;
 
 Module rb_mJsoncons;
 Data_Type<json_class_type> rb_cJsoncons_Json;
@@ -31,8 +31,24 @@ static auto json_query(const json_class_type &self, const json_string_type &path
     else return jsoncons::jsonpath::json_query(self, path);
 }
 
+static auto &json_at(const json_class_type &self, const VALUE value) {
+    switch (rb_type(value)) {
+        case RUBY_T_STRING:
+            return self.at(Rice::detail::From_Ruby<json_string_type>().convert(value));
+        case RUBY_T_SYMBOL:
+            return self.at(Symbol(value).str());
+        case RUBY_T_FIXNUM:
+        case RUBY_T_BIGNUM:
+            return self.at(Rice::detail::From_Ruby<std::size_t>().convert(value));
+        default: {
+            throw Exception(rb_eTypeError, "wrong argument type %s (expected % s)",
+                            detail::protect(rb_obj_classname, value), "String|Symbol|Integer");
+        }
+    }
+}
+
 extern "C"
-void Init_jsoncons() {
+[[maybe_unused]] void Init_jsoncons() {
     rb_mJsoncons = define_module("Jsoncons");
     rb_cJsoncons_Json =
             define_class_under<json_class_type>(rb_mJsoncons, "Json")
@@ -80,24 +96,26 @@ void Init_jsoncons() {
                                     [](const json_class_type &self, const json_string_type &key) {
                                         return self.contains(key);
                                     });
-//    rb_cJsoncons_Json.define_method("[]", &key_or_index, Arg("arg").isValue());
 
     rb_cJsoncons_Json.define_method("at_key", [](const json_class_type &self,
-                                                 const json_string_type &key) {
+                                                 const json_string_type &key) -> auto & {
         return self.at(key);
-    });
+    }, Return().keepAlive());
     rb_cJsoncons_Json.define_method("at_index", [](const json_class_type &self,
-                                                   const std::size_t &i) {
+                                                   const std::size_t &i) -> auto & {
         return self.at(i);
-    });
+    }, Return().keepAlive());
+
+    rb_cJsoncons_Json.define_method("at", &json_at, Arg("value").isValue(), Return().keepAlive());
+    rb_define_alias(rb_cJsoncons_Json, "[]", "at");
     rb_cJsoncons_Json.define_method("query", &json_query,
                                     Arg("options") = (std::optional<int>) std::nullopt);
 
     rb_cJsoncons_Json
             .define_method("size", &json_class_type::size)
             .define_method("empty", &json_class_type::empty)
-            .define_method("clear", &json_class_type::clear) // Doesn't work like that # data["arr"].clear
-            .define_method("swap", &json_class_type::swap) // Doesn't work like that # data["arr"].swap(other_arr)
+            .define_method("clear", &json_class_type::clear)
+            .define_method("swap", &json_class_type::swap)
 //            .define_method("remove", &json_class_type::remove) // erase
 //            .define_method("insert", &json_class_type::insert) // add
 //            .define_method("insert_or_assign", &json_class_type::insert_or_assign) // set
@@ -148,7 +166,7 @@ void Init_jsoncons() {
 //            .define_method("is_epoch_time", &json_class_type::is_epoch_time) // Tags
 //            .define_method("compare", &json_class_type::compare) // "to_json not implemented"
 //    rb_define_alias(rb_cJsoncons_Json, "<=>", "compare");
-
+    rb_define_alias(rb_cJsoncons_Json, "empty?", "empty");
 
 //    rb_cJsoncons_Json.define_method("to_a", [](const json_class_type &self) {
 //        std::vector<json_class_type> res(self.size());

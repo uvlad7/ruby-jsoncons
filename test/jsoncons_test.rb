@@ -8,6 +8,7 @@ class JsonconsTest < Minitest::Test
   def test_that_it_has_a_version_number
     refute_nil ::Jsoncons::VERSION
   end
+
   # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
 
   def test_single_values_parsing
@@ -59,7 +60,8 @@ class JsonconsTest < Minitest::Test
   end
 
   def test_jsonpath
-    # https://github.com/danielaparker/jsoncons/blob/master/doc/ref/jsonpath/jsonpath.md
+    # https://github.com/danielaparker/jsoncons/blob/
+    # /doc/ref/jsonpath/jsonpath.md
     # https://github.com/danielaparker/jsoncons/blob/master/doc/ref/jsonpath/json_query.md
     data = load_json("books")
     res = data.query("$.books[1,1,3].title")
@@ -100,6 +102,35 @@ class JsonconsTest < Minitest::Test
       ).to_s
     )
   end
+
+  def test_square_brakes_return_original_content
+    data = Jsoncons::Json.parse('{"data":[1,2,3,4]}')
+    arr = data["data"]
+    assert_equal("[1,2,3,4]", arr.to_s)
+    arr.clear
+    assert_equal('{"data":[]}', data.to_s)
+    # rubocop:disable Lint/UselessAssignment
+    data = nil
+    # rubocop:enable Lint/UselessAssignment
+    GC.start
+    # SIGSEGV if written incorrectly
+    assert arr.to_s
+  end
+
+  def test_jsonpath_return_copy
+    data = Jsoncons::Json.parse('{"data":[1,2,3,4]}')
+    arr = data.query("$.data")[0]
+    assert_equal("[1,2,3,4]", arr.to_s)
+    arr.clear
+    assert_equal('{"data":[1,2,3,4]}', data.to_s)
+    # rubocop:disable Lint/UselessAssignment
+    data = nil
+    # rubocop:enable Lint/UselessAssignment
+    GC.start
+    # SIGSEGV if written incorrectly
+    assert arr.to_s
+  end
+
   # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
 
   def load_json(name)
