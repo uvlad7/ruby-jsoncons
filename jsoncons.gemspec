@@ -9,7 +9,7 @@ Gem::Specification.new do |spec|
   spec.email = ["uvlad7@gmail.com"]
 
   spec.summary = "Ruby wrapper for jsoncons library and jsonpath"
-  spec.description = "Ruby wrapper for a part of {https://github.com/danielaparker/jsoncons jsoncons} library, " \
+  spec.description = "Ruby wrapper for a part of C++ jsoncons library, " \
 "mostly for its jsonpath implementation"
   spec.homepage = "https://github.com/uvlad7/ruby-jsoncons"
   spec.license = "MIT"
