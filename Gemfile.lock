@@ -26,7 +26,7 @@ GEM
     parallel (1.22.1)
     parser (3.2.0.0)
       ast (~> 2.4.1)
-    pry (0.14.1)
+    pry (0.14.2)
       coderay (~> 1.1)
       method_source (~> 1.0)
     pry-byebug (3.10.1)
@@ -52,6 +52,9 @@ GEM
       rubocop
     ruby-progressbar (1.11.0)
     unicode-display_width (1.8.0)
+    webrick (1.7.0)
+    yard (0.9.28)
+      webrick (~> 1.7.0)
 
 PLATFORMS
   x86_64-linux
@@ -68,6 +71,7 @@ DEPENDENCIES
   rubocop (~> 0.81.0)
   rubocop-minitest
   rubocop-rake
+  yard
 
 BUNDLED WITH
    2.4.2
