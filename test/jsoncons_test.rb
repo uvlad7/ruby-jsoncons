@@ -38,13 +38,13 @@ class JsonconsTest < Minitest::Test
     assert_equal(data[1].to_s, "2")
   end
 
-  def test_ruby_wrappers_for_method_result_are_different_every_time
+  def test_ruby_wrappers_for_method_result_are_different_every_time_but_equal
     data = Jsoncons::Json.parse('{"first":1,"second":2,"fourth":3,"fifth":4}')
-    assert(data[1] != data["second"])
+    assert(data[1] == data["second"])
     assert(data[1].object_id != data["second"].object_id)
     # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
     assert(data["second"].object_id != data["second"].object_id)
-    assert(data["second"] != data["second"])
+    assert(data["second"] == data["second"])
     # rubocop:enable Lint/BinaryOperatorWithIdenticalOperands:
   end
 
