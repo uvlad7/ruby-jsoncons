@@ -9,8 +9,8 @@ module Jsoncons
   class JsonconsError < StandardError; end
 
   # A wrapper for +jsoncons::ojson+ type;
-  # +o+ stands for +order_preserving+, this type was chosen as more familiar for Ruby programmes than
-  # sorted +jsoncons::json+.
+  # +o+ stands for +order_preserving+, this type was chosen as being more familiar to Ruby programmers
+  # than sorted +jsoncons::json+.
   # And here is the only place where strategy for converting names from C++ to Ruby, according to which
   # +jsoncons::jsonpath::jsonpath_expression+ becomes +Jsoncons::JsonPath::Expression+,
   # is not followed for convenience

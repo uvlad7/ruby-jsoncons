@@ -9,7 +9,7 @@ Gem::Specification.new do |spec|
   spec.email = ["uvlad7@gmail.com"]
 
   spec.summary = "Ruby wrapper for jsoncons library and jsonpath"
-  spec.description = "Ruby wrapper for a part of [jsoncons](https://github.com/danielaparker/jsoncons) library," \
+  spec.description = "Ruby wrapper for a part of {https://github.com/danielaparker/jsoncons jsoncons} library, " \
 "mostly for its jsonpath implementation"
   spec.homepage = "https://github.com/uvlad7/ruby-jsoncons"
   spec.license = "MIT"
@@ -21,7 +21,6 @@ Gem::Specification.new do |spec|
   spec.metadata["source_code_uri"] = "https://github.com/uvlad7/ruby-jsoncons"
   spec.metadata["changelog_uri"] = "https://github.com/uvlad7/ruby-jsoncons"
   spec.metadata["documentation_uri"] = "https://rubydoc.info/gems/jsoncons/frames"
-  spec.metadata["library_uri"] = "https://github.com/danielaparker/jsoncons"
 
   # Specify which files should be added to the gem when it is released.
   spec.files = [
