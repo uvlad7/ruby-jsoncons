@@ -50,6 +50,18 @@ static auto &json_at(const json_class_type &self, const VALUE value) {
 extern "C"
 [[maybe_unused]] void Init_jsoncons() {
     rb_mJsoncons = define_module("Jsoncons");
+
+
+/*
+ * Document-class: Jsoncons::Json
+ *
+ * A wrapper for +jsoncons::ojson+ type;
+ * +o+ stands for +order_preserving+, this type was chosen as more familiar for Ruby programmes than
+ * sorted +jsoncons::json+.
+ * And here is the only place where strategy for converting names from C++ to Ruby, according to which
+ * +jsoncons::jsonpath::jsonpath_expression+ becomes +Jsoncons::JsonPath::Expression+,
+ * is not followed for convenience
+ */
     rb_cJsoncons_Json =
             define_class_under<json_class_type>(rb_mJsoncons, "Json")
                     .define_constructor(Constructor<json_class_type>());
@@ -91,7 +103,6 @@ extern "C"
     rb_define_alias(rb_cJsoncons_Json, "to_s", "to_string");
     rb_define_alias(rb_cJsoncons_Json, "inspect", "to_string");
 
-//    also has_member
     rb_cJsoncons_Json.define_method("contains",
                                     [](const json_class_type &self, const json_string_type &key) {
                                         return self.contains(key);
@@ -153,10 +164,27 @@ extern "C"
 //            .define_method("at_or_null", &json_class_type::at_or_null) // Type is not defined with Rice
 //            .define_method("get_value_or", &json_class_type::get_value_or)
 //            .define_method("get_with_default", &json_class_type::get_with_default) // get
-//            .define_method("is_datetime", &json_class_type::is_datetime) // Tags
-//            .define_method("is_epoch_time", &json_class_type::is_epoch_time) // Tags
-//            .define_method("compare", &json_class_type::compare) // "to_json not implemented"
-//    rb_define_alias(rb_cJsoncons_Json, "<=>", "compare");
+    rb_cJsoncons_Json.define_method("is_datetime", [](const json_class_type &self) {
+                return self.tag() ==
+                       jsoncons::semantic_tag::datetime; // TODO: implement semantic_tag enum instead
+            })
+            .define_method("is_epoch_time", [](const json_class_type &self) {
+                return self.tag() ==
+                       jsoncons::semantic_tag::epoch_second; // TODO: implement semantic_tag enum instead
+            })
+            .define_method("is_integer", [](const json_class_type &self) {
+                return self.is_integer<size_t>();
+            });
+//    Data_Object<json_class_type> rhs(value);
+/**
+ * @!parse [c]
+ * rb_define_method(rb_cJsoncons_Json, "compare", compare, 1);
+ */
+    rb_cJsoncons_Json.define_method("compare", [](const json_class_type &self,
+                                                  json_class_type &rhs) {
+        return self.compare(rhs);
+    });
+    rb_define_alias(rb_cJsoncons_Json, "<=>", "compare");
     rb_define_alias(rb_cJsoncons_Json, "empty?", "empty");
 
 //    rb_cJsoncons_Json.define_method("to_a", [](const json_class_type &self) {

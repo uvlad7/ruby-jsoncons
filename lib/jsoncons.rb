@@ -3,20 +3,18 @@
 require_relative "jsoncons/version"
 require_relative "jsoncons/jsoncons"
 
+# A wrapper for a part of {https://github.com/danielaparker/jsoncons jsoncons} library,
+# mostly for its jsonpath implementation
 module Jsoncons
   class JsonconsError < StandardError; end
 
-  # A wrapper for [jsoncons](https://github.com/danielaparker/jsoncons)
-  # jsoncons::json class
+  # A wrapper for +jsoncons::ojson+ type;
+  # +o+ stands for +order_preserving+, this type was chosen as more familiar for Ruby programmes than
+  # sorted +jsoncons::json+.
+  # And here is the only place where strategy for converting names from C++ to Ruby, according to which
+  # +jsoncons::jsonpath::jsonpath_expression+ becomes +Jsoncons::JsonPath::Expression+,
+  # is not followed for convenience
   class Json
-    # @raise [RangeError] bignum too big to convert into `unsigned long'
-    # @raise [RangeError] Invalid array subscript
-    # @raise [FloatDomainError] Index on non-array value not supported
-    # @raise [RangeError] Key not found
-    # @raise [RuntimeError] Attempting to access a member of a value that is not an object
-    # @param [String|Symbol|Integer] arg
-    # @return [Jsoncons::Json]
-    # def [](arg)
-    # end
+    include Comparable
   end
 end
