@@ -44,7 +44,8 @@ unless defined?(RICE_EXT_LOADED)
           from_int,
           [
             "Returns ruby representation of a +#{cpp_type}+ enum member",
-            "@param value [Integer] a valid +#{cpp_type}+"
+            "@param value [Integer] a valid +#{cpp_type}+",
+            "@return [#{cls}]"
           ]
         )
         each = handle_method("singleton_method", var_name, "each", "rice_each")
@@ -52,7 +53,8 @@ unless defined?(RICE_EXT_LOADED)
           each,
           [
             "Iterates over all +#{cpp_type}+ enum members",
-            "@yield [value] ruby representation of a +#{cpp_type}+ enum member"
+            "@yieldparam value [#{cls}] ruby representation of a +#{cpp_type}+ enum member",
+            "@return [nil]"
           ]
         )
       end
