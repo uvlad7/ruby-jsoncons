@@ -20,7 +20,7 @@ Gem::Specification.new do |spec|
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = "https://github.com/uvlad7/ruby-jsoncons"
   spec.metadata["changelog_uri"] = "https://github.com/uvlad7/ruby-jsoncons"
-  spec.metadata["documentation_uri"] = "https://rubydoc.info/gems/jsoncons/frames"
+  spec.metadata["documentation_uri"] = "https://rubydoc.info/gems/jsoncons/#{spec.version}"
 
   # Specify which files should be added to the gem when it is released.
   spec.files = [
