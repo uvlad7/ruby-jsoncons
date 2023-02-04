@@ -179,6 +179,10 @@ extern "C"
                 return self.is_integer<size_t>();
             });
 //    Data_Object<json_class_type> rhs(value);
+    /**
+     * @!parse [c]
+     * rb_define_method(rb_cJsoncons_Json, "compare", compare, 1);
+     */
     rb_cJsoncons_Json.define_method("compare", [](const json_class_type &self,
                                                   json_class_type &rhs) {
         return self.compare(rhs);

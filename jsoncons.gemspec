@@ -13,7 +13,7 @@ Gem::Specification.new do |spec|
 "mostly for its jsonpath implementation"
   spec.homepage = "https://github.com/uvlad7/ruby-jsoncons"
   spec.license = "MIT"
-  spec.required_ruby_version = ">= 2.5"
+  spec.required_ruby_version = ">= 2.3"
 
   spec.metadata["allowed_push_host"] = "https://rubygems.org"
 
