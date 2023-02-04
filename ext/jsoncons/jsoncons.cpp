@@ -64,10 +64,12 @@ extern "C"
     rb_cJsoncons_Json =
             define_class_under<json_class_type>(rb_mJsoncons, "Json")
                     .define_constructor(Constructor<json_class_type>());
-    /**
-     * Document-class: Jsoncons::JsonPath
-     * @see https://danielaparker.github.io/jsoncons/#A8 jsoncons JSONPath documentation
-     */
+/**
+ * Document-module: Jsoncons::JsonPath
+ *
+ * A wrapper for +jsoncons::jsonpath+
+ * @see https://danielaparker.github.io/jsoncons/#A8 jsoncons JSONPath documentation
+ */
     rb_mJsoncons_JsonPath = define_module_under(rb_mJsoncons, "JsonPath");
     rb_cJsoncons_JsonPath_Expression =
             define_class_under<jsoncons::jsonpath::jsonpath_expression<json_class_type>>(
