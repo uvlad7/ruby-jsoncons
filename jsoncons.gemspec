@@ -43,6 +43,10 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "pry"
   spec.add_development_dependency "pry-byebug"
   spec.add_development_dependency "yard"
+  # # Cause I want to use rack adapter
+  spec.add_development_dependency "rack"
+  # # Cause I want to use rack adapter with puma server
+  spec.add_development_dependency "puma"
 
   # For more information and examples about making a new gem, checkout our
   # guide at: https://bundler.io/guides/creating_gem.html

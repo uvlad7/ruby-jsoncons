@@ -86,4 +86,18 @@ unless defined?(RICE_EXT_LOADED)
       end
     end
   end
+
+  # Handles methods
+  # class RiceMethodHandler < YARD::Handlers::C::Base
+  #   handles(/./)
+  #
+  #   statement_class BodyStatement # Comment # ToplevelStatement # BodyStatement
+  #
+  #   process do
+  #     puts statement.source
+  #     puts "----------------------------------------------------"
+  #     # source = RbGCCXML.parse("/home/vladimir/jsoncons/ext/jsoncons/jsoncons.cpp", includes: ["/home/vladimir/jsoncons/lib/jsoncons/jsoncons/include", "/home/vladimir/.rvm/gems/ruby-2.7.0/gems/rice-4.0.4/include", "/home/vladimir/.rvm/rubies/ruby-2.7.0/include/ruby-2.7.0", "/home/vladimir/.rvm/rubies/ruby-2.7.0/include/ruby-2.7.0/x86_64-linux"], cxxflags: ['-x c++', '-fpermissive'], clangpp_path: '/usr/bin/g++')
+  #     # source.functions(/Init_jsoncons/).return_type.to_cpp
+  #   end
+  # end
 end
