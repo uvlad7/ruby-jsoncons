@@ -70,5 +70,31 @@ class JsonconsTest < Minitest::Test
     # SIGSEGV if written incorrectly
     assert arr.to_s
   end
+
+  def test_emumerators
+    data = Jsoncons::Json.parse('{"data":[1,2,3,4]}')
+    arr = data.to_a.last.last
+    assert_equal("[1,2,3,4]", arr.to_s)
+    arr.clear
+    assert_equal('{"data":[]}', data.to_s)
+    # rubocop:disable Lint/UselessAssignment
+    data = nil
+    # rubocop:enable Lint/UselessAssignment
+    GC.start
+    # SIGSEGV if written incorrectly
+    assert arr.to_s
+
+    data = Jsoncons::Json.parse('[{"a":1,"b":2}]')
+    obj = data.to_a.last
+    assert_equal('{"a":1,"b":2}', obj.to_s)
+    obj.clear
+    assert_equal('[{}]', data.to_s)
+    # rubocop:disable Lint/UselessAssignment
+    data = nil
+    # rubocop:enable Lint/UselessAssignment
+    GC.start
+    # SIGSEGV if written incorrectly
+    assert obj.to_s
+  end
   # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
 end

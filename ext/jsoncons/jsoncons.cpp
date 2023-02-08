@@ -203,6 +203,36 @@ extern "C"
     rb_cJsoncons_Json.include_module(rb_mComparable);
     rb_define_alias(rb_cJsoncons_Json, "empty?", "empty");
 
+//    TODO: Ask for help about keepAlive for yielded objects
+    rb_cJsoncons_Json.define_method("each", [](json_class_type &self){
+        switch (self.type()) {
+            case jsoncons::json_type::array_value:
+                for (auto& item : self.array_range())
+                {
+//                    VALUE item_value = Rice::detail::To_Ruby<json_class_type>().convert(item);
+                    detail::protect(rb_yield, Data_Object<json_class_type>(item).value());
+                }
+                break;
+            case jsoncons::json_type::object_value:
+                for (auto& pair : self.object_value())
+                {
+//                    VALUE key_value = Rice::detail::To_Ruby<json_string_type>().convert(pair.key());
+//                    VALUE value_value = Rice::detail::To_Ruby<json_class_type>().convert(pair.value());
+                    Rice::Array ary;
+                    ary.push(pair.key());
+                    ary.push(Data_Object<json_class_type>(pair.value()));
+                    detail::protect(rb_yield, ary.value());
+                }
+                break;
+            default: {
+                std::stringstream msg;
+                msg << "Unable to iterate over " << self.type() << ", only arrays and objects are supported";
+                throw Exception(rb_eNotImpError, msg.str().c_str());
+            }
+        }
+    });
+    rb_cJsoncons_Json.include_module(rb_mEnumerable);
+
 //    rb_cJsoncons_Json.define_method("to_a", [](const json_class_type &self) {
 //        std::vector<json_class_type> res(self.size());
 //        for (int i = 0; i < self.size(); ++i) {
