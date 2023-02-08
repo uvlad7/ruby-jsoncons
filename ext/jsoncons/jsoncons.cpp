@@ -106,7 +106,17 @@ extern "C"
     });
     rb_cJsoncons_Json.define_method("to_string", &json_class_type::to_string);
     rb_define_alias(rb_cJsoncons_Json, "to_s", "to_string");
-    rb_define_alias(rb_cJsoncons_Json, "inspect", "to_string");
+    rb_cJsoncons_Json.define_method("inspect", [](const json_class_type &self) {
+        std::stringstream result;
+//        VALUE rubyKlass = Data_Type<json_class_type>::klass().value();
+//        jsoncons::json_type type_val = self.type();
+//        result << "#<" << detail::protect(rb_class2name, rubyKlass)
+        result << "#<" << rb_cJsoncons_Json << ':' << ((void *) &self)
+               //               << "<" << Data_Object<jsoncons::json_type>(type_val).to_s() << ">"
+               << " type=\"" << self.type() << "\""
+               << " " << self << ">";
+        return result.str();
+    });
 
     rb_cJsoncons_Json.define_method("contains",
                                     [](const json_class_type &self, const json_string_type &key) {
