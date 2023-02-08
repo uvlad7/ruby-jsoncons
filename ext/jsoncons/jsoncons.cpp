@@ -36,7 +36,7 @@ static auto &json_at(const json_class_type &self, const VALUE value) {
         case RUBY_T_STRING:
             return self.at(Rice::detail::From_Ruby<json_string_type>().convert(value));
         case RUBY_T_SYMBOL:
-            return self.at(Symbol(value).str());
+            return self.at(Rice::detail::From_Ruby<Symbol>().convert(value).str());
         case RUBY_T_FIXNUM:
         case RUBY_T_BIGNUM:
             return self.at(Rice::detail::From_Ruby<std::size_t>().convert(value));
