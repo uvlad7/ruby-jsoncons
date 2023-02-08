@@ -190,6 +190,7 @@ extern "C"
         return self.compare(rhs);
     });
     rb_define_alias(rb_cJsoncons_Json, "<=>", "compare");
+    rb_cJsoncons_Json.include_module(rb_mComparable);
     rb_define_alias(rb_cJsoncons_Json, "empty?", "empty");
 
 //    rb_cJsoncons_Json.define_method("to_a", [](const json_class_type &self) {
