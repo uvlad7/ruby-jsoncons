@@ -53,6 +53,7 @@ res3 = nil
 puts '1: Jsoncons::Json.parse and Jsoncons::Json#query'
 puts '1: Jsoncons::Json.parse and Jsoncons::JsonPath::Expression#evaluate'
 puts '3: JSON.parse and #find'
+puts '-----------------------------------------------------------------------'
 
 Benchmark.bm do |x|
   x.report('1') do
