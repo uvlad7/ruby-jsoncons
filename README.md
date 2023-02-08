@@ -30,9 +30,9 @@ Or install it yourself as:
 
     $ gem install jsoncons
 
-Or, if you downloaded the archive:
+Or, if you downloaded the sources:
 
-    $ rake compile && rake install
+    $ rake install
 
 If you want to install the gem with a different version of the `jsoncons` library, you can use the following commands:
 
@@ -44,7 +44,7 @@ or
 
 or when building from source
 
-    $ CONFIGURE_ARGS='--with-jsoncons-dir=/path/to/jsoncons' rake compile && rake install
+    $ CONFIGURE_ARGS='--with-jsoncons-dir=/path/to/jsoncons' rake install
 
 ## Usage
 
