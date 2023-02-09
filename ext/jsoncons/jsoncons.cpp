@@ -203,19 +203,18 @@ extern "C"
     rb_cJsoncons_Json.include_module(rb_mComparable);
     rb_define_alias(rb_cJsoncons_Json, "empty?", "empty");
 
-//    TODO: Ask for help about keepAlive for yielded objects
-    rb_cJsoncons_Json.define_method("each", [](json_class_type &self){
+// TODO: Ask for help about keepAlive for yielded objects
+// TODO: Test `return`, `break`, `next` inside the block
+    rb_cJsoncons_Json.define_method("each", [](json_class_type &self) {
         switch (self.type()) {
             case jsoncons::json_type::array_value:
-                for (auto& item : self.array_range())
-                {
+                for (auto &item: self.array_range()) {
 //                    VALUE item_value = Rice::detail::To_Ruby<json_class_type>().convert(item);
                     detail::protect(rb_yield, Data_Object<json_class_type>(item).value());
                 }
                 break;
             case jsoncons::json_type::object_value:
-                for (auto& pair : self.object_value())
-                {
+                for (auto &pair: self.object_value()) {
 //                    VALUE key_value = Rice::detail::To_Ruby<json_string_type>().convert(pair.key());
 //                    VALUE value_value = Rice::detail::To_Ruby<json_class_type>().convert(pair.value());
                     Rice::Array ary;
@@ -226,7 +225,8 @@ extern "C"
                 break;
             default: {
                 std::stringstream msg;
-                msg << "Unable to iterate over " << self.type() << ", only arrays and objects are supported";
+                msg << "Unable to iterate over " << self.type()
+                    << ", only arrays and objects are supported";
                 throw Exception(rb_eNotImpError, msg.str().c_str());
             }
         }
