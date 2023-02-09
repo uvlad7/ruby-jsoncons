@@ -203,12 +203,48 @@ extern "C"
     rb_cJsoncons_Json.include_module(rb_mComparable);
     rb_define_alias(rb_cJsoncons_Json, "empty?", "empty");
 
-//    rb_cJsoncons_Json.define_method("to_a", [](const json_class_type &self) {
-//        std::vector<json_class_type> res(self.size());
-//        for (int i = 0; i < self.size(); ++i) {
-//            res[i] = self[i];
+    rb_cJsoncons_Json.define_method("to_a", [](json_class_type &self) {
+        Rice::Array arr;
+//        for (auto &item: self.array_range()) {
+//            arr.push(Data_Object<json_class_type>(item));
 //        }
-//        return res;
-//    });
-}
+        for (size_t i = 0; i < self.size(); i++) {
+//            Todo: clarify
+//             "Be careful not to call this function more than once for the same pointer"
+            arr.push(Data_Object<json_class_type>(self[i]));
+//            json_class_type &item = self[i];
+//            arr.push(Data_Object<json_class_type>(&item));
+        }
+        return arr;
+    });
 
+/*
+ * WTF
+2.7.0 :001 > data = Jsoncons::Json.parse('{"data":[1,2,3,4]}')
+2.7.0 :002 > arr = data.to_arr
+2.7.0 :003 > arr
+ => [#<Jsoncons::Json:0x558e8e549dc0 type="array" [1,2,3,4]>]
+2.7.0 :004 > data
+ => #<Jsoncons::Json:0x558e8e5a53d0 type="object" {"data":[1,2,3,4]}>
+2.7.0 :005 > data = nil; GC.start
+ => nil
+2.7.0 :006 > arr
+ => [#<Jsoncons::Json:0x558e8e549dc0 type="array" [1,2,3,4]>]
+2.7.0 :007 > data = Jsoncons::Json.parse('{"data":[1,2,3,4]}')
+2.7.0 :008 > arr = data.to_arr
+2.7.0 :009 > data = nil; GC.start
+ => nil
+2.7.0 :010 > arr
+ => [#<Jsoncons::Json:0x558e8e7d1360 type="null" null>]
+ */
+    rb_cJsoncons_Json.define_method("to_arr", [](json_class_type &self) {
+        Rice::Array arr;
+        for (size_t i = 0; i < self.size(); i++) {
+//            Todo: clarify if this is how NativeFunction return values are wrapped
+//            VALUE NativeFunction<Function_T, IsMethod>::operator()(int argc, VALUE* argv, VALUE self)
+            json_class_type &item = self[i];
+            arr.push<json_class_type &>(item);
+        }
+        return arr;
+    }, Return().takeOwnership());
+}
