@@ -268,4 +268,18 @@ extern "C"
         }
         return arr;
     });
+
+    rb_cJsoncons_Json.define_method("debug", [](const json_class_type &self) {
+        std::stringstream result;
+        result << "address: " << ((void *) &self) << std::endl
+               << "type: " << self.type() << std::endl
+               << "tag: " << self.tag() << std::endl
+               << "storage_kind: " << self.storage_kind() << std::endl
+               << "ext_tag: " << self.ext_tag() << std::endl;
+        auto const *p = reinterpret_cast<const unsigned char *>(&self);
+        for (size_t n = 0; n < sizeof(json_class_type); ++n)
+            result << std::hex << std::setw(2) << static_cast<unsigned int>(p[n]) << " ";
+        result << std::endl;
+        return result.str();
+    });
 }
