@@ -246,5 +246,5 @@ extern "C"
             arr.push<json_class_type &>(item);
         }
         return arr;
-    }, Return().takeOwnership());
+    });
 }
