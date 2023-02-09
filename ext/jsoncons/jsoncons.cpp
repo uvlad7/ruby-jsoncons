@@ -224,7 +224,7 @@ extern "C"
 2.7.0 :002 > arr = data.to_arr
 2.7.0 :003 > arr
  => [#<Jsoncons::Json:0x558e8e549dc0 type="array" [1,2,3,4]>]
-2.7.0 :004 > data
+2.7.0 :004 > data # that's what matters
  => #<Jsoncons::Json:0x558e8e5a53d0 type="object" {"data":[1,2,3,4]}>
 2.7.0 :005 > data = nil; GC.start
  => nil
@@ -236,6 +236,27 @@ extern "C"
  => nil
 2.7.0 :010 > arr
  => [#<Jsoncons::Json:0x558e8e7d1360 type="null" null>]
+ */
+
+/*
+ * WTF x2
+2.7.0 :001 > data = Jsoncons::Json.parse('{"data":[1,2,3,4]}')
+2.7.0 :002 > arr = data.to_arr
+2.7.0 :003 > p data; nil
+#<Jsoncons::Json:0x5638e2b79f40 type="object" {"data":[1,2,3,4]}>
+ => nil
+2.7.0 :004 > data = nil; GC.start
+ => nil
+2.7.0 :005 > arr
+ => [#<Jsoncons::Json:0x5638e2628870 type="null" null>]
+2.7.0 :006 > data = Jsoncons::Json.parse('{"data":[1,2,3,4]}')
+2.7.0 :007 > arr = data.to_arr
+2.7.0 :008 > data
+ => #<Jsoncons::Json:0x5638e2bd0000 type="object" {"data":[1,2,3,4]}>
+2.7.0 :009 > data = nil; GC.start
+ => nil
+2.7.0 :010 > arr
+ => [#<Jsoncons::Json:0x5638e2e5de50 type="array" [1,2,3,4]>]
  */
     rb_cJsoncons_Json.define_method("to_arr", [](json_class_type &self) {
         Rice::Array arr;
