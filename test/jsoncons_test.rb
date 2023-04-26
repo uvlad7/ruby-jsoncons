@@ -63,38 +63,68 @@ class JsonconsTest < Minitest::Test
     assert_equal("[1,2,3,4]", arr.to_s)
     arr.clear
     assert_equal('{"data":[]}', data.to_s)
+    assert_equal("[]", arr.to_s)
+  end
+
+  def test_square_brakes_crash
+    data = Jsoncons::Json.parse('{"data":[1,2,3,4]}')
+    arr = data["data"]
+    arr.clear
     # rubocop:disable Lint/UselessAssignment
     data = nil
     # rubocop:enable Lint/UselessAssignment
     GC.start
     # SIGSEGV if written incorrectly
-    assert arr.to_s
+    assert_equal("[]", arr.to_s)
+    GC.start
+    arr.inspect
   end
 
-  def test_emumerators
+  def test_enum_object
     data = Jsoncons::Json.parse('{"data":[1,2,3,4]}')
-    arr = data.to_a.last.last
+    arr = data.find(&:itself).last
     assert_equal("[1,2,3,4]", arr.to_s)
     arr.clear
     assert_equal('{"data":[]}', data.to_s)
+    assert_equal("[]", arr.to_s)
+  end
+
+  def test_enum_object_crash
+    data = Jsoncons::Json.parse('{"data":[1,2,3,4]}')
+    arr = data.find(&:itself).last
+    arr.clear
     # rubocop:disable Lint/UselessAssignment
     data = nil
     # rubocop:enable Lint/UselessAssignment
     GC.start
     # SIGSEGV if written incorrectly
-    assert arr.to_s
+    assert_equal("[]", arr.to_s)
+    GC.start
+    arr.inspect
+  end
 
+  def test_enum_array
     data = Jsoncons::Json.parse('[{"a":1,"b":2}]')
-    obj = data.to_a.last
+    obj = data.find(&:itself)
     assert_equal('{"a":1,"b":2}', obj.to_s)
     obj.clear
-    assert_equal('[{}]', data.to_s)
+    assert_equal("[{}]", data.to_s)
+    assert_equal("{}", obj.to_s)
+  end
+
+  def test_enum_array_crash
+    data = Jsoncons::Json.parse('[{"a":1,"b":2}]')
+    obj = data.find(&:itself)
+    obj.clear
     # rubocop:disable Lint/UselessAssignment
     data = nil
     # rubocop:enable Lint/UselessAssignment
     GC.start
     # SIGSEGV if written incorrectly
-    assert obj.to_s
+    assert_equal("{}", obj.to_s)
+    GC.start
+    obj.inspect
   end
+
   # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
 end
