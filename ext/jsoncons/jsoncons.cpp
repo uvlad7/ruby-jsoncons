@@ -47,6 +47,20 @@ static auto &json_at(const json_class_type &self, const VALUE value) {
     }
 }
 
+static VALUE rb_size_function(VALUE recv_value) {
+    // Since we can't capture VALUE self from above (because then we can't send
+    // this lambda to rb_enumeratorize_with_size), extract it from recv
+    return detail::cpp_protect([&] {
+        json_class_type &recv = Rice::detail::From_Ruby<json_class_type &>().convert(
+                recv_value);
+//        auto range = recv.array_range();
+//        auto distance = std::distance(range.begin(), range.end());
+//        return detail::To_Ruby<json_class_type::array_iterator::difference_type>().convert(
+//                distance);
+        return recv.size();
+    });
+}
+
 extern "C"
 [[maybe_unused]] void Init_jsoncons() {
     rb_mJsoncons = define_module("Jsoncons");
@@ -112,7 +126,7 @@ extern "C"
 //        jsoncons::json_type type_val = self.type();
 //        result << "#<" << detail::protect(rb_class2name, rubyKlass)
         result << "#<" << rb_cJsoncons_Json << ':' << ((void *) &self)
-               //               << "<" << Data_Object<jsoncons::json_type>(type_val).to_s() << ">"
+               //               << "<" << Data_Object<jsoncons::json_type>(&type_val).to_s() << ">"
                << " type=\"" << self.type() << "\""
                << " " << self << ">";
         return result.str();
@@ -122,8 +136,10 @@ extern "C"
                                     [](const json_class_type &self, const json_string_type &key) {
                                         return self.contains(key);
                                     });
-
-    rb_cJsoncons_Json.define_method("at", &json_at, Arg("value").isValue(), Return().keepAlive());
+    rb_cJsoncons_Json.define_method("at", &json_at, Arg("value").setValue(), Return().keepAlive());
+    register_handler<jsoncons::ser_error>([](jsoncons::ser_error const &ex) {
+        throw Rice::Exception(rb_eRuntimeError, ex.what());
+    });
     rb_define_alias(rb_cJsoncons_Json, "[]", "at");
     rb_cJsoncons_Json.define_method("query", &json_query,
                                     Arg("options") = (std::optional<int>) std::nullopt);
@@ -190,7 +206,6 @@ extern "C"
             .define_method("is_integer", [](const json_class_type &self) {
                 return self.is_integer<size_t>();
             });
-//    Data_Object<json_class_type> rhs(value);
     /**
      * @!parse [c]
      * rb_define_method(rb_cJsoncons_Json, "compare", compare, 1);
@@ -203,24 +218,44 @@ extern "C"
     rb_cJsoncons_Json.include_module(rb_mComparable);
     rb_define_alias(rb_cJsoncons_Json, "empty?", "empty");
 
-// TODO: Ask for help about keepAlive for yielded objects
 // TODO: Test `return`, `break`, `next` inside the block
-    rb_cJsoncons_Json.define_method("each", [](json_class_type &self) {
+    rb_cJsoncons_Json.define_method("each", [](VALUE self_value) -> VALUE {
+        json_class_type &self = Rice::detail::From_Ruby<json_class_type &>().convert(self_value);
         switch (self.type()) {
             case jsoncons::json_type::array_value:
+                if (!rb_block_given_p()) {
+                    return rb_enumeratorize_with_size(self_value, Identifier("each").to_sym(),
+                                                      0, nullptr,
+                                                      rb_size_function);
+                }
                 for (auto &item: self.array_range()) {
-//                    VALUE item_value = Rice::detail::To_Ruby<json_class_type>().convert(item);
-                    detail::protect(rb_yield, Data_Object<json_class_type>(item).value());
+                    VALUE item_value = Rice::detail::To_Ruby<json_class_type &>().convert(item);
+                    Rice::detail::Wrapper *itemWrapper = Rice::detail::getWrapper(item_value);
+                    itemWrapper->addKeepAlive(self_value);
+                    detail::protect(rb_yield, item_value);
                 }
                 break;
             case jsoncons::json_type::object_value:
-                for (auto &pair: self.object_value()) {
-//                    VALUE key_value = Rice::detail::To_Ruby<json_string_type>().convert(pair.key());
-//                    VALUE value_value = Rice::detail::To_Ruby<json_class_type>().convert(pair.value());
-                    Rice::Array ary;
-                    ary.push(pair.key());
-                    ary.push(Data_Object<json_class_type>(pair.value()));
-                    detail::protect(rb_yield, ary.value());
+                if (!rb_block_given_p()) {
+                    return rb_enumeratorize_with_size(self_value, Identifier("each").to_sym(),
+                                                      0, nullptr,
+                                                      rb_size_function);
+                }
+                for (auto &pair: self.object_range()) {
+                    VALUE key_value = Rice::detail::To_Ruby<json_string_type &>().convert(
+                            pair.key());
+                    VALUE value_value = Rice::detail::To_Ruby<json_class_type &>().convert(
+                            pair.value());
+                    Rice::detail::Wrapper *valueWrapper = Rice::detail::getWrapper(value_value);
+                    valueWrapper->addKeepAlive(self_value);
+//                    detail::protect(rb_yield_values, 2, key_value, value_value);
+                    detail::protect(rb_yield, rb_assoc_new(key_value, value_value));
+//                    const VALUE arr[2] = {key_value, value_value};
+//                    detail::protect(rb_yield_values2, 2, arr);
+//                    Rice::Array ary;
+//                    ary.push(pair.key());
+//                    ary.push(Data_Object<json_class_type>(&pair.value()));
+//                    detail::protect(rb_yield, ary.value());
                 }
                 break;
             default: {
@@ -230,7 +265,8 @@ extern "C"
                 throw Exception(rb_eNotImpError, msg.str().c_str());
             }
         }
-    });
+        return self_value;
+    }, Return().setValue());
     rb_cJsoncons_Json.include_module(rb_mEnumerable);
 
 //    rb_cJsoncons_Json.define_method("to_a", [](const json_class_type &self) {
