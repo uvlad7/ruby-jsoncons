@@ -38,7 +38,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
   spec.extensions = ["ext/jsoncons/extconf.rb"]
 
-  spec.add_dependency "rice", "~> 4.0"
+  spec.add_dependency "rice", "~> 4.1"
   spec.add_development_dependency "get_process_mem"
   spec.add_development_dependency "pry"
   spec.add_development_dependency "pry-byebug"

@@ -2,7 +2,7 @@ PATH
   remote: .
   specs:
     jsoncons (0.1.2)
-      rice (~> 4.0)
+      rice (~> 4.1)
 
 GEM
   remote: https://rubygems.org/
@@ -39,7 +39,7 @@ GEM
     rake-compiler (1.2.1)
       rake
     rexml (3.2.5)
-    rice (4.0.4)
+    rice (4.1.0)
     rubocop (0.81.0)
       jaro_winkler (~> 1.5.1)
       parallel (~> 1.10)

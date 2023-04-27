@@ -31,8 +31,8 @@ rubyhdrdir = $(includedir)/$(RUBY_VERSION_NAME)
 vendorarchdir = $(vendorlibdir)/$(sitearch)
 vendorlibdir = $(vendordir)/$(ruby_version)
 vendordir = $(rubylibprefix)/vendor_ruby
-sitearchdir = $(sitelibdir)/$(sitearch)
-sitelibdir = $(sitedir)/$(ruby_version)
+sitearchdir = $(DESTDIR)/home/vladimir/jsoncons/lib/jsoncons
+sitelibdir = $(DESTDIR)/home/vladimir/jsoncons/lib/jsoncons
 sitedir = $(rubylibprefix)/site_ruby
 rubyarchdir = $(rubylibdir)/$(arch)
 rubylibdir = $(rubylibprefix)/$(ruby_version)
@@ -85,9 +85,9 @@ warnflags = -Wall -Wextra -Wdeprecated-declarations -Wduplicated-cond -Wimplicit
 cppflags = 
 CCDLFLAGS = -fPIC
 CFLAGS   = $(CCDLFLAGS) $(cflags)  -fPIC $(ARCH_FLAG)
-INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir)/ruby/backward -I$(hdrdir) -I$(srcdir) -I/home/vladimir/.rvm/gems/ruby-2.7.0/gems/rice-4.0.4/include
+INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir)/ruby/backward -I$(hdrdir) -I$(srcdir) -I/home/vladimir/.rvm/gems/ruby-2.7.0/gems/rice-4.1.0/include
 DEFS     = 
-CPPFLAGS =  -I/home/vladimir/jsoncons/lib/jsoncons/jsoncons/include  $(DEFS) $(cppflags)
+CPPFLAGS = -DHAVE_JSONCONS_JSON_HPP -DHAVE_JSONCONS_EXT_JSONPATH_JSONPATH_HPP -I/home/vladimir/jsoncons/lib/jsoncons/jsoncons/include  $(DEFS) $(cppflags)
 CXXFLAGS = $(CCDLFLAGS) -g -O2 -std=c++17 $(ARCH_FLAG)
 ldflags  = -L. -fstack-protector-strong -rdynamic -Wl,-export-dynamic
 dldflags = -Wl,--compress-debug-sections=zlib 
