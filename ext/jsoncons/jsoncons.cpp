@@ -61,6 +61,93 @@ static VALUE rb_size_function(VALUE recv_value) {
     });
 }
 
+constexpr static const char *reverse_each = "reverse_each";
+constexpr static const char *each = "each";
+
+template<class ArrIter, class ObjIter>
+static VALUE rb_json_each(VALUE self_value) {
+    static_assert(
+            (
+                    ((std::is_same_v<ArrIter, json_class_type::array_iterator>) &&
+                     (std::is_same_v<ObjIter, json_class_type::object_iterator>)) ||
+                    ((std::is_same_v<ArrIter, std::reverse_iterator<json_class_type::array_iterator>>) &&
+                     (std::is_same_v<ObjIter, std::reverse_iterator<json_class_type::object_iterator>>))
+
+            ),
+            "No way");
+    json_class_type &self = Rice::detail::From_Ruby<json_class_type &>().convert(self_value);
+    constexpr bool reverse = !std::is_same_v<ArrIter, json_class_type::array_iterator>;
+    constexpr const char *identifier = reverse ? reverse_each : each;
+
+    switch (self.type()) {
+        case jsoncons::json_type::array_value: {
+            if (!rb_block_given_p()) {
+                return rb_enumeratorize_with_size(self_value, Identifier(identifier).to_sym(),
+                                                  0, nullptr,
+                                                  rb_size_function);
+            }
+            auto range = self.array_range();
+            ArrIter begin, end;
+            if constexpr (reverse) {
+                begin = range.rbegin();
+                end = range.rend();
+            } else {
+                begin = range.begin();
+                end = range.end();
+            }
+//            for (auto &item: self.array_range()) {
+            for (auto it = begin; it != end; ++it) {
+                VALUE item_value = Rice::detail::To_Ruby<json_class_type &>().convert((*it));
+                Rice::detail::Wrapper *itemWrapper = Rice::detail::getWrapper(item_value);
+                itemWrapper->addKeepAlive(self_value);
+                detail::protect(rb_yield, item_value);
+            }
+        }
+            break;
+        case jsoncons::json_type::object_value: {
+            if (!rb_block_given_p()) {
+                return rb_enumeratorize_with_size(self_value, Identifier(identifier).to_sym(),
+                                                  0, nullptr,
+                                                  rb_size_function);
+            }
+            auto range = self.object_range();
+            ObjIter begin, end;
+            if constexpr (reverse) {
+                begin = range.rbegin();
+                end = range.rend();
+            } else {
+                begin = range.begin();
+                end = range.end();
+            }
+//            for (auto &pair: self.object_range()) {
+            for (auto it = begin; it != end; ++it) {
+                VALUE key_value = Rice::detail::To_Ruby<json_string_type &>().convert(
+                        (*it).key());
+                VALUE value_value = Rice::detail::To_Ruby<json_class_type &>().convert(
+                        (*it).value());
+                Rice::detail::Wrapper *valueWrapper = Rice::detail::getWrapper(value_value);
+                valueWrapper->addKeepAlive(self_value);
+//                    detail::protect(rb_yield_values, 2, key_value, value_value);
+                detail::protect(rb_yield, rb_assoc_new(key_value, value_value));
+//                    const VALUE arr[2] = {key_value, value_value};
+//                    detail::protect(rb_yield_values2, 2, arr);
+//                    Rice::Array ary;
+//                    ary.push(pair.key());
+//                    ary.push(Data_Object<json_class_type>(&pair.value()));
+//                    detail::protect(rb_yield, ary.value());
+            }
+        }
+            break;
+        default: {
+            std::stringstream msg;
+            msg << "Unable to iterate over " << self.type()
+                << ", only arrays and objects are supported";
+            throw Exception(rb_eNotImpError, msg.str().c_str());
+        }
+    }
+    return self_value;
+}
+
 extern "C"
 [[maybe_unused]] void Init_jsoncons() {
     rb_mJsoncons = define_module("Jsoncons");
@@ -219,54 +306,12 @@ extern "C"
     rb_define_alias(rb_cJsoncons_Json, "empty?", "empty");
 
 // TODO: Test `return`, `break`, `next` inside the block
-    rb_cJsoncons_Json.define_method("each", [](VALUE self_value) -> VALUE {
-        json_class_type &self = Rice::detail::From_Ruby<json_class_type &>().convert(self_value);
-        switch (self.type()) {
-            case jsoncons::json_type::array_value:
-                if (!rb_block_given_p()) {
-                    return rb_enumeratorize_with_size(self_value, Identifier("each").to_sym(),
-                                                      0, nullptr,
-                                                      rb_size_function);
-                }
-                for (auto &item: self.array_range()) {
-                    VALUE item_value = Rice::detail::To_Ruby<json_class_type &>().convert(item);
-                    Rice::detail::Wrapper *itemWrapper = Rice::detail::getWrapper(item_value);
-                    itemWrapper->addKeepAlive(self_value);
-                    detail::protect(rb_yield, item_value);
-                }
-                break;
-            case jsoncons::json_type::object_value:
-                if (!rb_block_given_p()) {
-                    return rb_enumeratorize_with_size(self_value, Identifier("each").to_sym(),
-                                                      0, nullptr,
-                                                      rb_size_function);
-                }
-                for (auto &pair: self.object_range()) {
-                    VALUE key_value = Rice::detail::To_Ruby<json_string_type &>().convert(
-                            pair.key());
-                    VALUE value_value = Rice::detail::To_Ruby<json_class_type &>().convert(
-                            pair.value());
-                    Rice::detail::Wrapper *valueWrapper = Rice::detail::getWrapper(value_value);
-                    valueWrapper->addKeepAlive(self_value);
-//                    detail::protect(rb_yield_values, 2, key_value, value_value);
-                    detail::protect(rb_yield, rb_assoc_new(key_value, value_value));
-//                    const VALUE arr[2] = {key_value, value_value};
-//                    detail::protect(rb_yield_values2, 2, arr);
-//                    Rice::Array ary;
-//                    ary.push(pair.key());
-//                    ary.push(Data_Object<json_class_type>(&pair.value()));
-//                    detail::protect(rb_yield, ary.value());
-                }
-                break;
-            default: {
-                std::stringstream msg;
-                msg << "Unable to iterate over " << self.type()
-                    << ", only arrays and objects are supported";
-                throw Exception(rb_eNotImpError, msg.str().c_str());
-            }
-        }
-        return self_value;
-    }, Return().setValue());
+    rb_cJsoncons_Json.define_method(each,
+                                    &rb_json_each<json_class_type::array_iterator, json_class_type::object_iterator>,
+                                    Return().setValue());
+    rb_cJsoncons_Json.define_method(reverse_each,
+                                    &rb_json_each<std::reverse_iterator<json_class_type::array_iterator>, std::reverse_iterator<json_class_type::object_iterator>>,
+                                    Return().setValue());
     rb_cJsoncons_Json.include_module(rb_mEnumerable);
 
 //    rb_cJsoncons_Json.define_method("to_a", [](const json_class_type &self) {
