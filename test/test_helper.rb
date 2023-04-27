@@ -6,6 +6,8 @@ require "jsoncons"
 require "minitest/autorun"
 require "minitest/reporters"
 
+require "json"
+
 Minitest::Reporters.use! [Minitest::Reporters::DefaultReporter.new(color: true)]
 
 def load_json(name)
