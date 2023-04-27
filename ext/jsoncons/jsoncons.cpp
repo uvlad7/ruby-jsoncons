@@ -320,13 +320,14 @@ extern "C"
                                     Return().setValue());
     rb_cJsoncons_Json.include_module(rb_mEnumerable);
 
-//    rb_cJsoncons_Json.define_method("to_a", [](const json_class_type &self) {
-//        std::vector<json_class_type> res(self.size());
-//        for (int i = 0; i < self.size(); ++i) {
-//            res[i] = self[i];
-//        }
-//        return res;
-//    });
+    rb_cJsoncons_Json.define_method("to_vec", [](const json_class_type &self) {
+        std::vector<json_class_type> res(self.size());
+        for (int i = 0; i < self.size(); ++i) {
+            res[i] = self[i];
+        }
+        return res;
+    });
+
     rb_cJsoncons_Json.define_method("to_a", [](json_class_type &self) {
         Rice::Array arr;
 //        for (auto &item: self.array_range()) {
@@ -345,8 +346,6 @@ extern "C"
     rb_cJsoncons_Json.define_method("to_arr", [](json_class_type &self) {
         Rice::Array arr;
         for (size_t i = 0; i < self.size(); i++) {
-//            Todo: clarify if this is how NativeFunction return values are wrapped
-//            VALUE NativeFunction<Function_T, IsMethod>::operator()(int argc, VALUE* argv, VALUE self)
             json_class_type &item = self[i];
             arr.push<json_class_type &>(item);
         }
