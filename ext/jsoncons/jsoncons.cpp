@@ -57,27 +57,23 @@ static VALUE rb_size_function(VALUE recv_value) {
 //        auto distance = std::distance(range.begin(), range.end());
 //        return detail::To_Ruby<json_class_type::array_iterator::difference_type>().convert(
 //                distance);
-        return recv.size();
+        return detail::To_Ruby<std::size_t>().convert(
+                recv.size());
     });
 }
 
-constexpr static const char *reverse_each = "reverse_each";
-constexpr static const char *each = "each";
+constexpr const char reverse_each_chr[] = "reverse_each";
+constexpr const char each_chr[] = "each";
 
-template<class ArrIter, class ObjIter>
+template<char const *identifier>
 static VALUE rb_json_each(VALUE self_value) {
-    static_assert(
-            (
-                    ((std::is_same_v<ArrIter, json_class_type::array_iterator>) &&
-                     (std::is_same_v<ObjIter, json_class_type::object_iterator>)) ||
-                    ((std::is_same_v<ArrIter, std::reverse_iterator<json_class_type::array_iterator>>) &&
-                     (std::is_same_v<ObjIter, std::reverse_iterator<json_class_type::object_iterator>>))
-
-            ),
-            "No way");
+    static_assert((std::string_view(reverse_each_chr) == identifier) ||
+                  (std::string_view(each_chr) == identifier),
+                  "Not implemented");
+    constexpr const bool reverse = std::string_view(reverse_each_chr) == identifier;
+    using ArrIter = std::conditional_t<reverse, std::reverse_iterator<json_class_type::array_iterator>, json_class_type::array_iterator>;
+    using ObjIter = std::conditional_t<reverse, std::reverse_iterator<json_class_type::object_iterator>, json_class_type::object_iterator>;
     json_class_type &self = Rice::detail::From_Ruby<json_class_type &>().convert(self_value);
-    constexpr bool reverse = !std::is_same_v<ArrIter, json_class_type::array_iterator>;
-    constexpr const char *identifier = reverse ? reverse_each : each;
 
     switch (self.type()) {
         case jsoncons::json_type::array_value: {
@@ -305,12 +301,9 @@ extern "C"
     rb_cJsoncons_Json.include_module(rb_mComparable);
     rb_define_alias(rb_cJsoncons_Json, "empty?", "empty");
 
-// TODO: Test `return`, `break`, `next` inside the block
-    rb_cJsoncons_Json.define_method(each,
-                                    &rb_json_each<json_class_type::array_iterator, json_class_type::object_iterator>,
-                                    Return().setValue());
-    rb_cJsoncons_Json.define_method(reverse_each,
-                                    &rb_json_each<std::reverse_iterator<json_class_type::array_iterator>, std::reverse_iterator<json_class_type::object_iterator>>,
+// TODO: Test `return`, `break`, `next` inside the block, modification during iteration
+    rb_cJsoncons_Json.define_method(each_chr, &rb_json_each<each_chr>, Return().setValue());
+    rb_cJsoncons_Json.define_method(reverse_each_chr, &rb_json_each<reverse_each_chr>,
                                     Return().setValue());
     rb_cJsoncons_Json.include_module(rb_mEnumerable);
 
