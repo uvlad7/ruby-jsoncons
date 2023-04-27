@@ -47,18 +47,32 @@ static auto &json_at(const json_class_type &self, const VALUE value) {
     }
 }
 
+template<bool reverse, bool is_arr>
 static VALUE rb_size_function(VALUE recv_value) {
-    // Since we can't capture VALUE self from above (because then we can't send
-    // this lambda to rb_enumeratorize_with_size), extract it from recv
+    using DirIterType = std::conditional_t<is_arr, json_class_type::array_iterator, json_class_type::object_iterator>;
+    using IterType = std::conditional_t<reverse, std::reverse_iterator<DirIterType>, DirIterType>;
+
     return detail::cpp_protect([&] {
         json_class_type &recv = Rice::detail::From_Ruby<json_class_type &>().convert(
                 recv_value);
-//        auto range = recv.array_range();
-//        auto distance = std::distance(range.begin(), range.end());
-//        return detail::To_Ruby<json_class_type::array_iterator::difference_type>().convert(
-//                distance);
-        return detail::To_Ruby<std::size_t>().convert(
-                recv.size());
+        auto range = [&] {
+            if constexpr (is_arr) {
+                return recv.array_range();
+            } else {
+                return recv.object_range();
+            }
+        }();
+        IterType begin, end;
+        if constexpr (reverse) {
+            begin = range.rbegin();
+            end = range.rend();
+        } else {
+            begin = range.begin();
+            end = range.end();
+        }
+        auto distance = std::distance(begin, end);
+        return detail::To_Ruby<typename IterType::difference_type>().convert(
+                distance);
     });
 }
 
@@ -80,7 +94,7 @@ static VALUE rb_json_each(VALUE self_value) {
             if (!rb_block_given_p()) {
                 return rb_enumeratorize_with_size(self_value, Identifier(identifier).to_sym(),
                                                   0, nullptr,
-                                                  rb_size_function);
+                                                  (rb_size_function<reverse, true>));
             }
             auto range = self.array_range();
             ArrIter begin, end;
@@ -104,7 +118,7 @@ static VALUE rb_json_each(VALUE self_value) {
             if (!rb_block_given_p()) {
                 return rb_enumeratorize_with_size(self_value, Identifier(identifier).to_sym(),
                                                   0, nullptr,
-                                                  rb_size_function);
+                                                  (rb_size_function<reverse, false>));
             }
             auto range = self.object_range();
             ObjIter begin, end;
