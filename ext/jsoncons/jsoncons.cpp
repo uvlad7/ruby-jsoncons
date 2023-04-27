@@ -47,6 +47,117 @@ static auto &json_at(const json_class_type &self, const VALUE value) {
     }
 }
 
+template<bool reverse, bool is_arr>
+static VALUE rb_size_function(VALUE recv_value) {
+    using DirIterType = std::conditional_t<is_arr, json_class_type::array_iterator, json_class_type::object_iterator>;
+    using IterType = std::conditional_t<reverse, std::reverse_iterator<DirIterType>, DirIterType>;
+
+    return detail::cpp_protect([&] {
+        json_class_type &recv = Rice::detail::From_Ruby<json_class_type &>().convert(
+                recv_value);
+        auto range = [&] {
+            if constexpr (is_arr) {
+                return recv.array_range();
+            } else {
+                return recv.object_range();
+            }
+        }();
+        IterType begin, end;
+        if constexpr (reverse) {
+            begin = range.rbegin();
+            end = range.rend();
+        } else {
+            begin = range.begin();
+            end = range.end();
+        }
+        auto distance = std::distance(begin, end);
+        return detail::To_Ruby<typename IterType::difference_type>().convert(
+                distance);
+    });
+}
+
+constexpr const char reverse_each_chr[] = "reverse_each";
+constexpr const char each_chr[] = "each";
+
+template<char const *identifier>
+static VALUE rb_json_each(VALUE self_value) {
+    static_assert((std::string_view(reverse_each_chr) == identifier) ||
+                  (std::string_view(each_chr) == identifier),
+                  "Not implemented");
+    constexpr const bool reverse = std::string_view(reverse_each_chr) == identifier;
+    using ArrIter = std::conditional_t<reverse, std::reverse_iterator<json_class_type::array_iterator>, json_class_type::array_iterator>;
+    using ObjIter = std::conditional_t<reverse, std::reverse_iterator<json_class_type::object_iterator>, json_class_type::object_iterator>;
+    json_class_type &self = Rice::detail::From_Ruby<json_class_type &>().convert(self_value);
+
+    switch (self.type()) {
+        case jsoncons::json_type::array_value: {
+            if (!rb_block_given_p()) {
+                return rb_enumeratorize_with_size(self_value, Identifier(identifier).to_sym(),
+                                                  0, nullptr,
+                                                  (rb_size_function<reverse, true>));
+            }
+            auto range = self.array_range();
+            ArrIter begin, end;
+            if constexpr (reverse) {
+                begin = range.rbegin();
+                end = range.rend();
+            } else {
+                begin = range.begin();
+                end = range.end();
+            }
+//            for (auto &item: self.array_range()) {
+            for (auto it = begin; it != end; ++it) {
+                VALUE item_value = Rice::detail::To_Ruby<json_class_type &>().convert((*it));
+                Rice::detail::Wrapper *itemWrapper = Rice::detail::getWrapper(item_value);
+                itemWrapper->addKeepAlive(self_value);
+                detail::protect(rb_yield, item_value);
+            }
+        }
+            break;
+        case jsoncons::json_type::object_value: {
+            if (!rb_block_given_p()) {
+                return rb_enumeratorize_with_size(self_value, Identifier(identifier).to_sym(),
+                                                  0, nullptr,
+                                                  (rb_size_function<reverse, false>));
+            }
+            auto range = self.object_range();
+            ObjIter begin, end;
+            if constexpr (reverse) {
+                begin = range.rbegin();
+                end = range.rend();
+            } else {
+                begin = range.begin();
+                end = range.end();
+            }
+//            for (auto &pair: self.object_range()) {
+            for (auto it = begin; it != end; ++it) {
+                VALUE key_value = Rice::detail::To_Ruby<json_string_type &>().convert(
+                        (*it).key());
+                VALUE value_value = Rice::detail::To_Ruby<json_class_type &>().convert(
+                        (*it).value());
+                Rice::detail::Wrapper *valueWrapper = Rice::detail::getWrapper(value_value);
+                valueWrapper->addKeepAlive(self_value);
+//                    detail::protect(rb_yield_values, 2, key_value, value_value);
+                detail::protect(rb_yield, rb_assoc_new(key_value, value_value));
+//                    const VALUE arr[2] = {key_value, value_value};
+//                    detail::protect(rb_yield_values2, 2, arr);
+//                    Rice::Array ary;
+//                    ary.push(pair.key());
+//                    ary.push(Data_Object<json_class_type>(&pair.value()));
+//                    detail::protect(rb_yield, ary.value());
+            }
+        }
+            break;
+        default: {
+            std::stringstream msg;
+            msg << "Unable to iterate over " << self.type()
+                << ", only arrays and objects are supported";
+            throw Exception(rb_eNotImpError, msg.str().c_str());
+        }
+    }
+    return self_value;
+}
+
 extern "C"
 [[maybe_unused]] void Init_jsoncons() {
     rb_mJsoncons = define_module("Jsoncons");
@@ -112,7 +223,7 @@ extern "C"
 //        jsoncons::json_type type_val = self.type();
 //        result << "#<" << detail::protect(rb_class2name, rubyKlass)
         result << "#<" << rb_cJsoncons_Json << ':' << ((void *) &self)
-               //               << "<" << Data_Object<jsoncons::json_type>(type_val).to_s() << ">"
+               //               << "<" << Data_Object<jsoncons::json_type>(&type_val).to_s() << ">"
                << " type=\"" << self.type() << "\""
                << " " << self << ">";
         return result.str();
@@ -122,8 +233,10 @@ extern "C"
                                     [](const json_class_type &self, const json_string_type &key) {
                                         return self.contains(key);
                                     });
-
-    rb_cJsoncons_Json.define_method("at", &json_at, Arg("value").isValue(), Return().keepAlive());
+    rb_cJsoncons_Json.define_method("at", &json_at, Arg("value").setValue(), Return().keepAlive());
+    register_handler<jsoncons::ser_error>([](jsoncons::ser_error const &ex) {
+        throw Rice::Exception(rb_eRuntimeError, ex.what());
+    });
     rb_define_alias(rb_cJsoncons_Json, "[]", "at");
     rb_cJsoncons_Json.define_method("query", &json_query,
                                     Arg("options") = (std::optional<int>) std::nullopt);
@@ -190,7 +303,6 @@ extern "C"
             .define_method("is_integer", [](const json_class_type &self) {
                 return self.is_integer<size_t>();
             });
-//    Data_Object<json_class_type> rhs(value);
     /**
      * @!parse [c]
      * rb_define_method(rb_cJsoncons_Json, "compare", compare, 1);
@@ -202,6 +314,12 @@ extern "C"
     rb_define_alias(rb_cJsoncons_Json, "<=>", "compare");
     rb_cJsoncons_Json.include_module(rb_mComparable);
     rb_define_alias(rb_cJsoncons_Json, "empty?", "empty");
+
+// TODO: Test `return`, `break`, `next` inside the block, modification during iteration
+    rb_cJsoncons_Json.define_method(each_chr, &rb_json_each<each_chr>, Return().setValue());
+    rb_cJsoncons_Json.define_method(reverse_each_chr, &rb_json_each<reverse_each_chr>,
+                                    Return().setValue());
+    rb_cJsoncons_Json.include_module(rb_mEnumerable);
 
 //    rb_cJsoncons_Json.define_method("to_a", [](const json_class_type &self) {
 //        std::vector<json_class_type> res(self.size());

@@ -54,12 +54,21 @@ class JsonpathTest < Minitest::Test
     assert_equal("[1,2,3,4]", arr.to_s)
     arr.clear
     assert_equal('{"data":[1,2,3,4]}', data.to_s)
+    assert_equal("[]", arr.to_s)
+  end
+
+  def test_jsonpath_crash
+    data = Jsoncons::Json.parse('{"data":[1,2,3,4]}')
+    arr = data.query("$.data")[0]
+    arr.clear
     # rubocop:disable Lint/UselessAssignment
     data = nil
     # rubocop:enable Lint/UselessAssignment
     GC.start
     # SIGSEGV if written incorrectly
-    assert arr.to_s
+    assert_equal("[]", arr.to_s)
+    GC.start
+    arr.inspect
   end
 
   # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
