@@ -2,7 +2,7 @@ PATH
   remote: .
   specs:
     jsoncons (0.1.2)
-      rice (~> 4.1)
+      rice (~> 4.1.0)
 
 GEM
   remote: https://rubygems.org/

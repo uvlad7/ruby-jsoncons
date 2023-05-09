@@ -25,4 +25,8 @@ Rake::ExtensionTask.new("jsoncons") do |ext|
   ext.lib_dir = "lib/jsoncons"
 end
 
+Rake::ExtensionTask.new("debug") do |ext|
+  ext.lib_dir = "lib/jsoncons"
+end
+
 task default: %i[clobber compile test rubocop]

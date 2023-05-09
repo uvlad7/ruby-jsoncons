@@ -1,10 +1,4 @@
-#include "jsoncons.h"
-
-using namespace Rice;
-
-using json_class_type = /* jsoncons::wojson */ jsoncons::ojson;
-// wchar_t is not defined with Rice
-using json_string_type = /* std::wstring */ std::string;
+#include "../jsoncons.h"
 
 Module rb_mJsoncons;
 Data_Type<json_class_type> rb_cJsoncons_Json;
@@ -13,6 +7,9 @@ Data_Type<jsoncons::jsonpath::jsonpath_expression<json_class_type>> rb_cJsoncons
 Data_Type<jsoncons::jsonpath::result_options> rb_cJsoncons_JsonPath_ResultOptions;
 Data_Type<jsoncons::json_storage_kind> rb_cJsoncons_StorageKind;
 Data_Type<jsoncons::json_type> rb_cJsoncons_Type;
+Data_Type<json_custom_functions> rb_cJsoncons_JsonPath_CustomFunctions;
+Data_Type<json_params_type> rb_cJsoncons_JsonPath_Parameter;
+Data_Type<json_span_type> rb_cJsoncons_Span;
 
 static auto evaluate(const jsoncons::jsonpath::jsonpath_expression<json_class_type> &self,
                      const json_class_type &data,
@@ -23,12 +20,33 @@ static auto evaluate(const jsoncons::jsonpath::jsonpath_expression<json_class_ty
 }
 
 static auto json_query(const json_class_type &self, const json_string_type &path,
-                       const std::optional<int> &options = std::nullopt) {
+                       const std::optional<int> &options = std::nullopt,
+                       const std::optional<json_custom_functions> &functions = std::nullopt
+) {
 //    throw Rice::create_type_exception<jsoncons::jsonpath::jsonpath_expression<json_class_type>>(SOME_VALUE);
+    if (functions) {
+        if (options)
+            return jsoncons::jsonpath::json_query(
+                    self, path,
+                    static_cast<jsoncons::jsonpath::result_options>(*options),
+                    functions.value()
+            );
+        else
+            return jsoncons::jsonpath::json_query(self, path, jsoncons::jsonpath::result_options(),
+                                                  functions.value());
+    }
     if (options) // Custom functions and callbacks aren't implemented yet
         return jsoncons::jsonpath::json_query(self, path,
                                               static_cast<jsoncons::jsonpath::result_options>(*options));
     else return jsoncons::jsonpath::json_query(self, path);
+}
+
+static auto resize(json_class_type &self, std::size_t n,
+                   const std::optional<json_class_type> &val = std::nullopt) {
+    if (val)
+        return self.resize<json_class_type>(n, val.value());
+    else
+        return self.resize(n);
 }
 
 static auto &json_at(const json_class_type &self, const VALUE value) {
@@ -80,7 +98,7 @@ constexpr const char reverse_each_chr[] = "reverse_each";
 constexpr const char each_chr[] = "each";
 
 template<char const *identifier>
-static VALUE rb_json_each(VALUE self_value) {
+static VALUE json_each(VALUE self_value) {
     static_assert((std::string_view(reverse_each_chr) == identifier) ||
                   (std::string_view(each_chr) == identifier),
                   "Not implemented");
@@ -158,6 +176,86 @@ static VALUE rb_json_each(VALUE self_value) {
     return self_value;
 }
 
+static Array json_to_a(VALUE self_value) {
+    json_class_type &self = Rice::detail::From_Ruby<json_class_type &>().convert(self_value);
+    Rice::Array arr;
+    switch (self.type()) {
+        case jsoncons::json_type::array_value: {
+            for (auto &item: self.array_range()) {
+                VALUE item_value = Rice::detail::To_Ruby<json_class_type &>().convert((item));
+                Rice::detail::Wrapper *itemWrapper = Rice::detail::getWrapper(item_value);
+                itemWrapper->addKeepAlive(self_value);
+//                arr.push<json_class_type &>(item);
+                detail::protect(rb_ary_push, arr.value(), item_value);
+            }
+        }
+            break;
+        case jsoncons::json_type::object_value: {
+            for (auto &pair: self.object_range()) {
+                VALUE key_value = Rice::detail::To_Ruby<json_string_type &>().convert(
+                        pair.key());
+                VALUE value_value = Rice::detail::To_Ruby<json_class_type &>().convert(
+                        pair.value());
+                Rice::detail::Wrapper *valueWrapper = Rice::detail::getWrapper(value_value);
+                valueWrapper->addKeepAlive(self_value);
+                detail::protect(rb_ary_push, arr.value(), rb_assoc_new(key_value, value_value));
+            }
+        }
+            break;
+        default: {
+            detail::protect(rb_ary_push, arr.value(), self_value);
+        }
+    }
+    return arr;
+}
+
+// TODO: implement semantic_tag enum instead
+template<jsoncons::semantic_tag tag>
+static inline bool json_is(const json_class_type &self) {
+    return self.tag() == tag;
+}
+
+static Identifier call_sym("call");
+
+static inline auto cpp_call_registered_proc(
+        const Object &proc,
+        json_span_type &params,
+        std::error_code &ec) {
+//    try {
+    const auto &ret = Rice::detail::From_Ruby<json_class_type &>().convert(
+            proc.call(call_sym, params).value());
+//    detail::replace() - clear our temporary objects somehow
+//    auto *data = new json_class_type(json_class_type::null());
+//    detail::replace<json_class_type>(self_value, Data_Type<json_class_type>::ruby_data_type(), data, true);
+//    return json_class_type(ret);
+    return ret;
+//    } catch (Rice::Exception const &ex) {
+//        ec = jsoncons::jsonpath::jsonpath_errc::unidentified_error;
+//        return json_class_type::null();
+//    }
+}
+
+static auto &json_register_function(json_custom_functions &self,
+                                    const json_string_type &name,
+                                    const std::optional<std::size_t> &arity,
+                                    const VALUE proc_value) {
+    const Object proc(proc_value);
+//    if (proc.class_of().value() == rb_cProc) {
+    if (proc.respond_to(call_sym)) {
+        self.register_function(name, arity,
+                               [proc](json_span_type params,
+                                      std::error_code &ec) {
+                                   return cpp_call_registered_proc(proc, params, ec);
+                               });
+        return self;
+    } else {
+        throw Exception(rb_eTypeError, "wrong argument type %s (expected % s)",
+                        detail::protect(rb_obj_classname, proc.value()),
+//                        "Proc");
+                        "#call");
+    }
+}
+
 extern "C"
 [[maybe_unused]] void Init_jsoncons() {
     rb_mJsoncons = define_module("Jsoncons");
@@ -190,7 +288,26 @@ extern "C"
                         return jsoncons::jsonpath::make_expression<json_class_type>(json_query);
                     })
                     .define_method("evaluate", &evaluate,
-                                   Arg("options") = (std::optional<int>) std::nullopt);
+                                   Arg("options") = (const std::optional<int>) std::nullopt);
+    rb_cJsoncons_JsonPath_CustomFunctions = define_class_under<json_custom_functions>(
+            rb_mJsoncons_JsonPath, "CustomFunctions"
+    ).define_constructor(Constructor<json_custom_functions>())
+            .define_method("register_function",
+                           &json_register_function, Arg("name"),
+                           Arg("arity"),
+                           Arg("proc").setValue().keepAlive());
+    rb_cJsoncons_JsonPath_Parameter = define_class_under<json_params_type>(
+            rb_mJsoncons_JsonPath, "Parameter"
+    ).define_method("value", &json_params_type::value);
+    rb_cJsoncons_Span = define_class_under<json_span_type>(rb_mJsoncons, "Span")
+            .define_method("[]", [](const json_span_type &self,
+                                    json_span_type::size_type index) -> json_span_type::reference {
+                if (index < self.size())
+                    return self[index];
+                throw Rice::Exception(rb_eArgError, "Invalid index: %d (expected 0...%d)", index,
+                                      self.size());
+            })
+            .define_method("size", &json_span_type::size);
 
     rb_cJsoncons_JsonPath_ResultOptions =
             define_enum<jsoncons::jsonpath::result_options>("ResultOptions", rb_mJsoncons_JsonPath)
@@ -238,8 +355,8 @@ extern "C"
     });
     rb_define_alias(rb_cJsoncons_Json, "[]", "at");
     rb_cJsoncons_Json.define_method("query", &json_query,
-                                    Arg("options") = (std::optional<int>) std::nullopt);
-
+                                    Arg("options") = (std::optional<int>) std::nullopt,
+                                    Arg("functions") = (std::optional<json_custom_functions>) std::nullopt);
     rb_cJsoncons_Json
             .define_method("size", &json_class_type::size)
             .define_method("empty", &json_class_type::empty)
@@ -257,9 +374,9 @@ extern "C"
             .define_method("is_null", &json_class_type::is_null)
 //            .define_method("count", &json_class_type::count) // Type is not defined with Rice
             .define_method("is_string", &json_class_type::is_string)
-//            .define_method("is_string_view", &json_class_type::is_string_view)
+            .define_method("is_string_view", &json_class_type::is_string_view)
             .define_method("is_byte_string", &json_class_type::is_byte_string)
-//            .define_method("is_byte_string_view", &json_class_type::is_byte_string_view)
+            .define_method("is_byte_string_view", &json_class_type::is_byte_string_view)
             .define_method("is_bignum", &json_class_type::is_bignum)
             .define_method("is_bool", &json_class_type::is_bool)
             .define_method("is_object", &json_class_type::is_object)
@@ -269,39 +386,36 @@ extern "C"
             .define_method("is_half", &json_class_type::is_half)
             .define_method("is_double", &json_class_type::is_double)
             .define_method("is_number", &json_class_type::is_number)
-//            .define_method("capacity", &json_class_type::capacity)
-//            .define_method("reserve", &json_class_type::reserve)
-//            .define_method("resize", &json_class_type::resize) // resize_array
-//            .define_method("shrink_to_fit", &json_class_type::shrink_to_fit)
+            .define_method("capacity", &json_class_type::capacity)
+            .define_method("reserve", &json_class_type::reserve)
+            .define_method("resize", &resize, Arg("n"),
+                           Arg("val") = (const std::optional<json_class_type>) std::nullopt)
+            .define_method("shrink_to_fit", &json_class_type::shrink_to_fit)
             .define_method("as_bool", &json_class_type::as_bool)
-            .define_method("as_double", &json_class_type::as_double);
-//            .define_method("as_string", &json_class_type::as_string)
-//            .define_method("as_cstring", &json_class_type::as_cstring)
-//            .define_method("is_integer", &json_class_type::is_integer)
-//            .define_method("is_longlong", &json_class_type::is_longlong) // Deprecated
-//            .define_method("is_ulonglong", &json_class_type::is_ulonglong) // Deprecated
-//            .define_method("as_longlong", &json_class_type::as_longlong) // Deprecated
-//            .define_method("as_ulonglong", &json_class_type::as_ulonglong) // Deprecated
+            .define_method("as_double", &json_class_type::as_double)
+            .define_method("as_string",
+                           [](const json_class_type &self) { return self.as_string(); })
+            .define_method("as_cstring", &json_class_type::as_cstring)
+            .define_method("is_integer", &json_class_type::is_integer < json_int_type > )
+            .define_method("as_integer", &json_class_type::as_integer < json_int_type > )
+            .define_method("is_longlong", &json_class_type::is < long long > )
+            .define_method("is_ulonglong", &json_class_type::is < unsigned long long > )
+            .define_method("as_longlong", &json_class_type::as < long long > ) // Deprecated
+            .define_method("as_ulonglong",
+                           &json_class_type::as < unsigned long long > ); // Deprecated
 //            .define_method("as_int", &json_class_type::as_int) // Deprecated
 //            .define_method("as_uint", &json_class_type::as_uint) // Deprecated
 //            .define_method("as_long", &json_class_type::as_long) // Deprecated
 //            .define_method("as_ulong", &json_class_type::as_ulong) // Deprecated
-//            .define_method("as_integer", &json_class_type::as_integer)
 //            .define_method("find", &json_class_type::find)
 //            .define_method("at_or_null", &json_class_type::at_or_null) // Type is not defined with Rice
 //            .define_method("get_value_or", &json_class_type::get_value_or)
 //            .define_method("get_with_default", &json_class_type::get_with_default) // get
-    rb_cJsoncons_Json.define_method("is_datetime", [](const json_class_type &self) {
-                return self.tag() ==
-                       jsoncons::semantic_tag::datetime; // TODO: implement semantic_tag enum instead
-            })
-            .define_method("is_epoch_time", [](const json_class_type &self) {
-                return self.tag() ==
-                       jsoncons::semantic_tag::epoch_second; // TODO: implement semantic_tag enum instead
-            })
-            .define_method("is_integer", [](const json_class_type &self) {
-                return self.is_integer<size_t>();
-            });
+    rb_define_alias(rb_cJsoncons_Json, "resize_array", "resize"); // Deprecated
+    rb_cJsoncons_Json.define_method("is_datetime",
+                                    &json_is<jsoncons::semantic_tag::datetime>) // Deprecated
+            .define_method("is_epoch_time",
+                           &json_is<jsoncons::semantic_tag::epoch_second>); // Deprecated
     /**
      * @!parse [c]
      * rb_define_method(rb_cJsoncons_Json, "compare", compare, 1);
@@ -314,60 +428,13 @@ extern "C"
     rb_cJsoncons_Json.include_module(rb_mComparable);
     rb_define_alias(rb_cJsoncons_Json, "empty?", "empty");
 
-// TODO: Test `return`, `break`, `next` inside the block, modification during iteration
-    rb_cJsoncons_Json.define_method(each_chr, &rb_json_each<each_chr>, Return().setValue());
-    rb_cJsoncons_Json.define_method(reverse_each_chr, &rb_json_each<reverse_each_chr>,
+    rb_cJsoncons_Json.define_method(each_chr, &json_each<each_chr>, Return().setValue());
+    rb_cJsoncons_Json.define_method(reverse_each_chr, &json_each<reverse_each_chr>,
                                     Return().setValue());
     rb_cJsoncons_Json.include_module(rb_mEnumerable);
 
-    rb_cJsoncons_Json.define_method("to_vec", [](const json_class_type &self) {
-        std::vector<json_class_type> res(self.size());
-        for (int i = 0; i < self.size(); ++i) {
-            res[i] = self[i];
-        }
-        return res;
-    });
-
-    rb_cJsoncons_Json.define_method("to_a", [](json_class_type &self) {
-        Rice::Array arr;
-//        for (auto &item: self.array_range()) {
-//            arr.push(Data_Object<json_class_type>(item));
-//        }
-        for (size_t i = 0; i < self.size(); i++) {
-//            Todo: clarify
-//             "Be careful not to call this function more than once for the same pointer"
-            arr.push(Data_Object<json_class_type>(self[i]));
-//            json_class_type &item = self[i];
-//            arr.push(Data_Object<json_class_type>(&item));
-        }
-        return arr;
-    });
-
-    rb_cJsoncons_Json.define_method("to_arr", [](json_class_type &self) {
-        Rice::Array arr;
-        for (size_t i = 0; i < self.size(); i++) {
-            json_class_type &item = self[i];
-            arr.push<json_class_type &>(item);
-        }
-        return arr;
-    });
-
-    rb_cJsoncons_Json.define_method("debug", [](VALUE self_value) {
-        const json_class_type &self = Rice::detail::From_Ruby<json_class_type &>().convert(
-                self_value);
-        std::stringstream result;
-        result << "object: " << self_value << std::endl
-               << "address: " << ((void *) &self) << std::endl
-               << "type: " << self.type() << std::endl
-               << "tag: " << self.tag() << std::endl
-               << "storage_kind: " << self.storage_kind() << std::endl
-               << "ext_tag: " << self.ext_tag() << std::endl;
-        self.dump_pretty(result);
-        result << std::endl;
-        auto const *p = reinterpret_cast<const unsigned char *>(&self);
-        for (size_t n = 0; n < sizeof(json_class_type); ++n)
-            result << std::hex << std::setw(2) << static_cast<unsigned int>(p[n]) << " ";
-        result << std::endl;
-        return result.str();
+    rb_cJsoncons_Json.define_method("to_a", &json_to_a);
+    rb_cJsoncons_Json.define_method("dup", [](const json_class_type &self) {
+        return json_class_type(self);
     });
 }

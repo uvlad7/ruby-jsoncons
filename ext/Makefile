@@ -11,7 +11,7 @@ NULLCMD = :
 
 #### Start of system configuration section. ####
 
-srcdir = .
+srcdir = jsoncons
 topdir = /home/vladimir/.rvm/rubies/ruby-2.7.0/include/ruby-2.7.0
 hdrdir = $(topdir)
 arch_hdrdir = /home/vladimir/.rvm/rubies/ruby-2.7.0/include/ruby-2.7.0/x86_64-linux
@@ -31,8 +31,8 @@ rubyhdrdir = $(includedir)/$(RUBY_VERSION_NAME)
 vendorarchdir = $(vendorlibdir)/$(sitearch)
 vendorlibdir = $(vendordir)/$(ruby_version)
 vendordir = $(rubylibprefix)/vendor_ruby
-sitearchdir = $(DESTDIR)/home/vladimir/jsoncons/lib/jsoncons
-sitelibdir = $(DESTDIR)/home/vladimir/jsoncons/lib/jsoncons
+sitearchdir = $(sitelibdir)/$(sitearch)
+sitelibdir = $(sitedir)/$(ruby_version)
 sitedir = $(rubylibprefix)/site_ruby
 rubyarchdir = $(rubylibdir)/$(arch)
 rubylibdir = $(rubylibprefix)/$(ruby_version)
@@ -141,7 +141,7 @@ LIBS = $(LIBRUBYARG_SHARED) -lstdc++  -lm   -lc
 ORIG_SRCS = jsoncons.cpp
 SRCS = $(ORIG_SRCS) 
 OBJS = jsoncons.o
-HDRS = $(srcdir)/jsoncons.h
+HDRS = 
 LOCAL_HDRS = 
 TARGET = jsoncons
 TARGET_NAME = jsoncons

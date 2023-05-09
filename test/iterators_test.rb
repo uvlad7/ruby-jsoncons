@@ -44,4 +44,87 @@ class IteratorsTest < Minitest::Test
     assert_equal(10, arr.each.size)
     assert_equal(10, arr.reverse_each.size)
   end
+
+  def iterator_with_return(iterable, check)
+    iterable.each { |v, _| return v.to_s if v.to_s == check }
+  end
+
+  def iterator_with_throw(iterable, check)
+    iterable.each { |v, _| throw :iterator_with_throw, v.to_s if v.to_s == check }
+  end
+
+  def iterator_with_raise(iterable, check)
+    iterable.each { |v, _| raise v.to_s if v.to_s == check }
+  end
+
+  def iterator_with_return_index(iterable, index)
+    iterable.each.with_index { |(v, _), i| return v.to_s if i == index }
+  end
+
+  def iterator_with_throw_index(iterable, index)
+    iterable.each.with_index { |(v, _), i| throw :iterator_with_throw, v.to_s if i == index }
+  end
+
+  def iterator_with_raise_index(iterable, index)
+    iterable.each.with_index { |(v, _), i| raise v.to_s if i == index }
+  end
+
+  # It actually just checks it doesn't crash
+  def test_jumps
+    arr = Jsoncons::Json.parse((1..10).to_a.to_json)
+    obj = Jsoncons::Json.parse(("a".."z").map { |l| [l, l.ord] }.to_h.to_json)
+    # 'next' is not a jump, actually
+    arr.each { |v| next v.to_s }
+    obj.each { |k, _| next k }
+    arr.each.with_index { |v, _| next v.to_s }
+    obj.each.with_index { |k, _, _| next k }
+    ###
+    assert_equal("3", iterator_with_return(arr, "3"))
+    assert_equal("f", iterator_with_return(obj, "f"))
+    assert_equal("3", arr.each { |v| break v.to_s if v.to_s == "3" })
+    assert_equal("f", obj.each { |k, _| break k if k == "f" })
+    assert_equal("3", catch(:iterator_with_throw) { iterator_with_throw(arr, "3") })
+    assert_equal("f", catch(:iterator_with_throw) { iterator_with_throw(obj, "f") })
+    error = assert_raises(RuntimeError) { iterator_with_raise(arr, "3") }
+    assert_equal("3", error.message)
+    error = assert_raises(RuntimeError) { iterator_with_raise(obj, "f") }
+    assert_equal("f", error.message)
+    ###
+    assert_equal("3", iterator_with_return_index(arr, 2))
+    assert_equal("f", iterator_with_return_index(obj, 5))
+    assert_equal("3", arr.each.with_index { |v, i| break v.to_s if i == 2 })
+    assert_equal("f", obj.each.with_index { |(k, _), i| break k if i == 5 })
+    assert_equal("3", catch(:iterator_with_throw) { iterator_with_throw_index(arr, 2) })
+    assert_equal("f", catch(:iterator_with_throw) { iterator_with_throw_index(obj, 5) })
+    error = assert_raises(RuntimeError) { iterator_with_raise_index(arr, 2) }
+    assert_equal("3", error.message)
+    error = assert_raises(RuntimeError) { iterator_with_raise_index(obj, 5) }
+    assert_equal("f", error.message)
+  end
+
+  def iterator_with_modification(iterable, check)
+    iterable.each do |v, _|
+      iterable.clear
+      return v.to_s if v.to_s == check
+    end
+  end
+
+  def iterator_with_modification_index(iterable, index)
+    iterable.each.with_index do |(v, _), i|
+      iterable.clear
+      return v.to_s if i == index
+    end
+  end
+
+  # It actually just checks it doesn't crash
+  def test_modification_during_iteration
+    arr = Jsoncons::Json.parse((1..10).to_a.to_json)
+    obj = Jsoncons::Json.parse(("a".."z").map { |l| [l, l.ord] }.to_h.to_json)
+    assert_equal("3", iterator_with_modification(arr, "3"))
+    assert_equal("f", iterator_with_modification(obj, "f"))
+    arr = Jsoncons::Json.parse((1..10).to_a.to_json)
+    obj = Jsoncons::Json.parse(("a".."z").map { |l| [l, l.ord] }.to_h.to_json)
+    assert_equal("3", iterator_with_modification_index(arr, 2))
+    assert_equal("f", iterator_with_modification_index(obj, 5))
+  end
 end

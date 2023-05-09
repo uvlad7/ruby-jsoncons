@@ -25,9 +25,11 @@ Gem::Specification.new do |spec|
   # Specify which files should be added to the gem when it is released.
   spec.files = [
     *Dir["lib/jsoncons/jsoncons/include/**/*"].reject { |f| File.directory?(f) },
-    "ext/jsoncons/jsoncons.cpp", "ext/jsoncons/jsoncons.h", "jsoncons.gemspec", "lib/jsoncons.rb",
+    "ext/jsoncons/jsoncons.cpp", "ext/jsoncons.h", "ext/jsoncons/extconf.rb",
+    "jsoncons.gemspec", "lib/jsoncons.rb",
     "lib/jsoncons/version.rb",
-    "yard_extensions.rb", ".yardopts"
+    "yard_extensions.rb", ".yardopts",
+    "ext/debug/debug.cpp", "ext/debug/extconf.rb", "ext/jsoncons_extconf.rb"
   ]
   spec.test_files = [
     *Dir["lib/jsoncons/jsoncons/examples/input/**/*"].reject { |f| File.directory?(f) },
@@ -36,9 +38,9 @@ Gem::Specification.new do |spec|
   spec.bindir = "exe"
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
-  spec.extensions = ["ext/jsoncons/extconf.rb"]
+  spec.extensions = %w[ext/jsoncons/extconf.rb ext/debug/extconf.rb]
 
-  spec.add_dependency "rice", "~> 4.1"
+  spec.add_dependency "rice", "~> 4.1.0"
   spec.add_development_dependency "get_process_mem"
   spec.add_development_dependency "pry"
   spec.add_development_dependency "pry-byebug"
