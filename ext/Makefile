@@ -12,12 +12,12 @@ NULLCMD = :
 #### Start of system configuration section. ####
 
 srcdir = jsoncons
-topdir = /home/vladimir/.rvm/rubies/ruby-2.7.0/include/ruby-2.7.0
+topdir = /home/vladimir/.asdf/installs/ruby/2.7.8/include/ruby-2.7.0
 hdrdir = $(topdir)
-arch_hdrdir = /home/vladimir/.rvm/rubies/ruby-2.7.0/include/ruby-2.7.0/x86_64-linux
+arch_hdrdir = /home/vladimir/.asdf/installs/ruby/2.7.8/include/ruby-2.7.0/x86_64-linux
 PATH_SEPARATOR = :
 VPATH = $(srcdir):$(arch_hdrdir)/ruby:$(hdrdir)/ruby
-prefix = $(DESTDIR)/home/vladimir/.rvm/rubies/ruby-2.7.0
+prefix = $(DESTDIR)/home/vladimir/.asdf/installs/ruby/2.7.8
 rubysitearchprefix = $(rubylibprefix)/$(sitearch)
 rubyarchprefix = $(rubylibprefix)/$(arch)
 rubylibprefix = $(libdir)/$(RUBY_BASE_NAME)
@@ -55,7 +55,7 @@ includedir = $(prefix)/include
 runstatedir = $(localstatedir)/run
 localstatedir = $(prefix)/var
 sharedstatedir = $(prefix)/com
-sysconfdir = $(DESTDIR)/etc
+sysconfdir = $(prefix)/etc
 datadir = $(datarootdir)
 datarootdir = $(prefix)/share
 libexecdir = $(exec_prefix)/libexec
@@ -69,8 +69,8 @@ CC = gcc
 CXX = g++
 LIBRUBY = $(LIBRUBY_SO)
 LIBRUBY_A = lib$(RUBY_SO_NAME)-static.a
-LIBRUBYARG_SHARED = -Wl,-rpath,'$${ORIGIN}/../lib' -Wl,-rpath,'$${ORIGIN}/../lib' -l$(RUBY_SO_NAME)
-LIBRUBYARG_STATIC = -Wl,-rpath,'$${ORIGIN}/../lib' -Wl,-rpath,'$${ORIGIN}/../lib' -l$(RUBY_SO_NAME)-static $(MAINLIBS)
+LIBRUBYARG_SHARED = -Wl,-rpath,$(libdir) -L$(libdir) -l$(RUBY_SO_NAME)
+LIBRUBYARG_STATIC = -Wl,-rpath,$(libdir) -L$(libdir) -l$(RUBY_SO_NAME)-static $(MAINLIBS)
 empty =
 OUTFLAG = -o $(empty)
 COUTFLAG = -o $(empty)
@@ -84,13 +84,13 @@ debugflags = -ggdb3
 warnflags = -Wall -Wextra -Wdeprecated-declarations -Wduplicated-cond -Wimplicit-function-declaration -Wimplicit-int -Wmisleading-indentation -Wpointer-arith -Wwrite-strings -Wimplicit-fallthrough=0 -Wmissing-noreturn -Wno-cast-function-type -Wno-constant-logical-operand -Wno-long-long -Wno-missing-field-initializers -Wno-overlength-strings -Wno-packed-bitfield-compat -Wno-parentheses-equality -Wno-self-assign -Wno-tautological-compare -Wno-unused-parameter -Wno-unused-value -Wsuggest-attribute=format -Wsuggest-attribute=noreturn -Wunused-variable
 cppflags = 
 CCDLFLAGS = -fPIC
-CFLAGS   = $(CCDLFLAGS) $(cflags)  -fPIC $(ARCH_FLAG)
-INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir)/ruby/backward -I$(hdrdir) -I$(srcdir) -I/home/vladimir/.rvm/gems/ruby-2.7.0/gems/rice-4.1.0/include
+CFLAGS   = $(CCDLFLAGS) -g -O2 -fPIC $(ARCH_FLAG)
+INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir)/ruby/backward -I$(hdrdir) -I$(srcdir) -I/home/vladimir/.asdf/installs/ruby/2.7.8/lib/ruby/gems/2.7.0/gems/rice-4.1.0/include
 DEFS     = 
-CPPFLAGS = -DHAVE_JSONCONS_JSON_HPP -DHAVE_JSONCONS_EXT_JSONPATH_JSONPATH_HPP -I/home/vladimir/jsoncons/lib/jsoncons/jsoncons/include  $(DEFS) $(cppflags)
+CPPFLAGS = -DHAVE_JSONCONS_JSON_HPP -DHAVE_JSONCONS_EXT_JSONPATH_JSONPATH_HPP -I/home/vladimir/jsoncons/lib/jsoncons/jsoncons/include -I/home/vladimir/.asdf/installs/ruby/2.7.8/include  $(DEFS) $(cppflags)
 CXXFLAGS = $(CCDLFLAGS) -g -O2 -std=c++17 $(ARCH_FLAG)
-ldflags  = -L. -fstack-protector-strong -rdynamic -Wl,-export-dynamic
-dldflags = -Wl,--compress-debug-sections=zlib 
+ldflags  = -L. -L/home/vladimir/.asdf/installs/ruby/2.7.8/lib  -fstack-protector-strong -rdynamic -Wl,-export-dynamic
+dldflags = -L/home/vladimir/.asdf/installs/ruby/2.7.8/lib  -Wl,--compress-debug-sections=zlib 
 ARCH_FLAG = 
 DLDFLAGS = $(ldflags) $(dldflags) $(ARCH_FLAG)
 LDSHARED = $(CC) -shared
@@ -110,13 +110,14 @@ sitearch = $(arch)
 ruby_version = 2.7.0
 ruby = $(bindir)/$(RUBY_BASE_NAME)
 RUBY = $(ruby)
+BUILTRUBY = $(bindir)/$(RUBY_BASE_NAME)
 ruby_headers = $(hdrdir)/ruby.h $(hdrdir)/ruby/backward.h $(hdrdir)/ruby/ruby.h $(hdrdir)/ruby/defines.h $(hdrdir)/ruby/missing.h $(hdrdir)/ruby/intern.h $(hdrdir)/ruby/st.h $(hdrdir)/ruby/subst.h $(arch_hdrdir)/ruby/config.h
 
 RM = rm -f
 RM_RF = $(RUBY) -run -e rm -- -rf
 RMDIRS = rmdir --ignore-fail-on-non-empty -p
-MAKEDIRS = /usr/bin/mkdir -p
-INSTALL = /usr/bin/install
+MAKEDIRS = /home/linuxbrew/.linuxbrew/bin/gmkdir -p
+INSTALL = /home/linuxbrew/.linuxbrew/bin/ginstall -c
 INSTALL_PROG = $(INSTALL) -m 0755
 INSTALL_DATA = $(INSTALL) -m 644
 COPY = cp
