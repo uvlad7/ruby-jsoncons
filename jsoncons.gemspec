@@ -32,9 +32,9 @@ Gem::Specification.new do |spec|
     "ext/debug/debug.cpp", "ext/debug/extconf.rb", "ext/jsoncons_extconf.rb"
   ]
   spec.test_files = [
-    *Dir["lib/jsoncons/jsoncons/examples/input/**/*"].reject { |f| File.directory?(f) },
-    "test/jsoncons_test.rb", "test/test_helper.rb"
-  ]
+    *Dir["lib/jsoncons/jsoncons/examples/input/**/*"],
+    *Dir["test/*"]
+  ].reject { |f| File.directory?(f) }
   spec.bindir = "exe"
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]

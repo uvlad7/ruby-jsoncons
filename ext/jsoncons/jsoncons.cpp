@@ -57,6 +57,12 @@ static auto &json_at(const json_class_type &self, const VALUE value) {
             return self.at(Rice::detail::From_Ruby<Symbol>().convert(value).str());
         case RUBY_T_FIXNUM:
         case RUBY_T_BIGNUM:
+//            std::numeric_limits<std::size_t>::max() is 2**64 on 64 bit systems
+//            while max Fixnum is 2**62 (63 bit, signed),
+//            on 32 bit limits will be 2**32 and 2*30 accordingly,
+//            so theoretically we may need Bignum.
+//            Checks range automatically:
+//              RangeError (bignum too big to convert into `unsigned long')
             return self.at(Rice::detail::From_Ruby<std::size_t>().convert(value));
         default: {
             throw Exception(rb_eTypeError, "wrong argument type %s (expected % s)",
@@ -222,11 +228,14 @@ static inline auto cpp_call_registered_proc(
         json_span_type &params,
         std::error_code &ec) {
 //    try {
+    std::array<VALUE, 1> values = {
+            detail::To_Ruby<json_span_type &>().convert(params)};
     const auto &ret = Rice::detail::From_Ruby<json_class_type &>().convert(
-            proc.call(call_sym, params).value());
-//    detail::replace() - clear our temporary objects somehow
-//    auto *data = new json_class_type(json_class_type::null());
-//    detail::replace<json_class_type>(self_value, Data_Type<json_class_type>::ruby_data_type(), data, true);
+            detail::protect(rb_funcallv_kw, proc.value(), call_sym.id(), (int) values.size(),
+                            (const VALUE *) values.data(), RB_PASS_CALLED_KEYWORDS));
+    auto *data = new json_span_type();
+    detail::replace<json_span_type>(values.at(0), Data_Type<json_span_type>::ruby_data_type(),
+                                    data, false);
 //    return json_class_type(ret);
     return ret;
 //    } catch (Rice::Exception const &ex) {
@@ -298,7 +307,7 @@ extern "C"
                            Arg("proc").setValue().keepAlive());
     rb_cJsoncons_JsonPath_Parameter = define_class_under<json_params_type>(
             rb_mJsoncons_JsonPath, "Parameter"
-    ).define_method("value", &json_params_type::value);
+    ).define_method("value", [](const json_params_type &self) -> json_class_type { return self.value(); });
     rb_cJsoncons_Span = define_class_under<json_span_type>(rb_mJsoncons, "Span")
             .define_method("[]", [](const json_span_type &self,
                                     json_span_type::size_type index) -> json_span_type::reference {

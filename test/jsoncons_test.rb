@@ -93,57 +93,56 @@ class JsonconsTest < Minitest::Test
     arr.inspect
   end
 
-  # def test_query_callback_crash
-  #   root = Jsoncons::Json.parse('[{"foo": 60, "bar": 10},{"foo": 60, "bar": 5}]')
-  #   divide_tmp = nil
-  #   foobar_tmp = nil
-  #   opt_tmp = nil
-  #   param_tmp = nil
-  #   divide_callback = proc do |opt|
-  #     arg0 = opt[0].value
-  #     divide_tmp = arg0
-  #     arg1 = opt[1].value
-  #     # TODO: fix
-  #     Jsoncons::Json.parse((arg0.as_integer / arg1.as_integer).to_s)
-  #   end
-  #   foobar_callback = proc do |opt|
-  #     opt_tmp = opt
-  #     param0 = opt[0]
-  #     param_tmp = param0
-  #     arg0 = param0.value
-  #     foobar_tmp = arg0
-  #     # TODO: fix
-  #     Jsoncons::Json.parse((arg0['foo'].as_integer + arg0['bar'].as_integer).to_s)
-  #   end
-  #   fun = Jsoncons::JsonPath::CustomFunctions.new
-  #                                            .register_function("divide", 2, divide_callback)
-  #                                            .register_function("foobar", 1, foobar_callback)
-  #   root.query("$[?(divide(@.foo, @.bar) == 6)]", nil, fun)
-  #   root.query("$[?(foobar(@) == 65)]", nil, fun)
-  #
-  #   GC.start
-  #   # SIGSEGV if written incorrectly
-  #   opt_tmp[0].value.to_s
-  #   GC.start
-  #   opt_tmp[0].value.inspect
-  #
-  #   GC.start
-  #   # SIGSEGV if written incorrectly
-  #   param_tmp.value.to_s
-  #   GC.start
-  #   param_tmp.value.inspect
-  #
-  #   GC.start
-  #   # SIGSEGV if written incorrectly
-  #   divide_tmp.to_s
-  #   GC.start
-  #   divide_tmp.inspect
-  #   GC.start
-  #   # SIGSEGV if written incorrectly
-  #   foobar_tmp.to_s
-  #   GC.start
-  #   foobar_tmp.inspect
-  # end
+  def test_query_callback_crash
+    root = Jsoncons::Json.parse('[{"foo": 60, "bar": 10},{"foo": 60, "bar": 5}]')
+    divide_tmp = nil
+    foobar_tmp = nil
+    opt_tmp = nil
+    param_tmp = nil
+    divide_callback = proc do |opt|
+      arg0 = opt[0].value
+      divide_tmp = arg0
+      arg1 = opt[1].value
+      # TODO: fix
+      Jsoncons::Json.parse((arg0.as_integer / arg1.as_integer).to_s)
+    end
+    foobar_callback = proc do |opt|
+      opt_tmp = opt
+      param0 = opt[0]
+      param_tmp = param0
+      arg0 = param0.value
+      foobar_tmp = arg0
+      # TODO: fix
+      Jsoncons::Json.parse((arg0['foo'].as_integer + arg0['bar'].as_integer).to_s)
+    end
+    fun = Jsoncons::JsonPath::CustomFunctions.new
+                                             .register_function("divide", 2, divide_callback)
+                                             .register_function("foobar", 1, foobar_callback)
+    root.query("$[?(divide(@.foo, @.bar) == 6)]", nil, fun)
+    root.query("$[?(foobar(@) == 65)]", nil, fun)
+
+    # check temporary object was replaced with an empty one
+    GC.start
+    assert_equal(0, opt_tmp.size)
+    assert_raises(ArgumentError, "Invalid index: 0 (expected 0...0)") { opt_tmp[0] }
+
+    GC.start
+    # SIGSEGV if written incorrectly
+    param_tmp.value.to_s
+    GC.start
+    param_tmp.value.inspect
+
+    GC.start
+    # SIGSEGV if written incorrectly
+    divide_tmp.to_s
+    GC.start
+    divide_tmp.inspect
+    GC.start
+    # SIGSEGV if written incorrectly
+    foobar_tmp.to_s
+    GC.start
+    foobar_tmp.inspect
+  end
 
   def test_enum_object
     data = Jsoncons::Json.parse('{"data":[1,2,3,4]}')
